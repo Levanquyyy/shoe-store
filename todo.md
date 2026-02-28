@@ -75,3 +75,36 @@ All core e-commerce features have been implemented:
 - User authentication with account pages
 - Admin panel for product management
 - Elegant, responsive design throughout
+
+## New Features - Phase 2
+
+### Branding Update
+- [ ] Replace "SoleStyle" with "FootWare" across all pages
+- [ ] Update navigation branding
+- [ ] Update footer branding
+- [ ] Update page titles and headings
+
+### Image Upload for Admin
+- [ ] Add file upload input to admin product form
+- [ ] Implement S3 image upload functionality
+- [ ] Display uploaded image preview
+- [ ] Replace URL input with file upload
+
+### Order Bills & Receipts
+- [ ] Create order confirmation page with bill display
+- [ ] Add printable bill format
+- [ ] Display order details, items, and totals
+- [ ] Add print button for bill
+
+### Admin Order Management
+- [ ] Add order status field (pending, approved, shipped, delivered)
+- [ ] Create order approval interface in admin panel
+- [ ] Allow admin to view and approve orders
+- [ ] Update order status when approved
+- [ ] Send notification when order is approved
+
+### Inventory Management
+- [ ] Deduct product stock when order is created
+- [ ] Prevent orders if stock is insufficient
+- [ ] Display stock status in admin panel
+- [ ] Add low stock warnings

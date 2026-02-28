@@ -11,9 +11,9 @@ export default function Checkout() {
   const { isAuthenticated } = useAuth();
   const { data: cartItems } = trpc.cart.list.useQuery();
   const { mutate: createOrder, isPending } = trpc.orders.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (result) => {
       toast.success("Order placed successfully!");
-      setTimeout(() => setLocation("/account"), 1500);
+      setTimeout(() => setLocation(`/order-confirmation?orderId=${result.orderId}`), 1500);
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to place order");
@@ -37,7 +37,7 @@ export default function Checkout() {
         <nav className="bg-card border-b border-border">
           <div className="container flex items-center h-16">
             <Link href="/">
-              <a className="text-2xl font-bold text-accent">SoleStyle</a>
+              <a className="text-2xl font-bold text-accent">FootWare</a>
             </Link>
           </div>
         </nav>
@@ -94,7 +94,7 @@ export default function Checkout() {
       <nav className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container flex items-center justify-between h-16">
           <Link href="/">
-            <a className="text-2xl font-bold text-accent">SoleStyle</a>
+            <a className="text-2xl font-bold text-accent">FootWare</a>
           </Link>
           <Link href="/cart">
             <a className="flex items-center gap-2 text-foreground hover:text-accent transition-colors">

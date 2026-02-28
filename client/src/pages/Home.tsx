@@ -17,7 +17,7 @@ export default function Home() {
       <nav className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="container flex items-center justify-between h-16">
           <Link href="/">
-            <a className="text-2xl font-bold text-accent">SoleStyle</a>
+            <a className="text-2xl font-bold text-accent">FootWare</a>
           </Link>
           <div className="flex items-center gap-6">
             <Link href="/shop">
@@ -211,7 +211,7 @@ export default function Home() {
         <div className="container">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
-              <h4 className="font-bold mb-4">SoleStyle</h4>
+              <h4 className="font-bold mb-4">FootWare</h4>
               <p className="text-sm opacity-80">Premium footwear for every lifestyle.</p>
             </div>
             <div>
@@ -239,7 +239,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-background/20 pt-8 text-center text-sm opacity-80">
-            <p>&copy; 2026 SoleStyle. All rights reserved.</p>
+            <p>&copy; 2026 FootWare. All rights reserved.</p>
           </div>
         </div>
       </footer>

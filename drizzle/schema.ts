@@ -100,6 +100,8 @@ export const orders = mysqlTable("orders", {
     zipCode: string;
     country: string;
   }>().notNull(),
+  approvedAt: timestamp("approvedAt"),
+  approvedBy: int("approvedBy"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

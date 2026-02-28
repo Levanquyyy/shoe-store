@@ -24,7 +24,7 @@ export default function Account() {
         <nav className="bg-card border-b border-border">
           <div className="container flex items-center h-16">
             <Link href="/">
-              <a className="text-2xl font-bold text-accent">SoleStyle</a>
+              <a className="text-2xl font-bold text-accent">FootWare</a>
             </Link>
           </div>
         </nav>
@@ -43,7 +43,7 @@ export default function Account() {
       <nav className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container flex items-center justify-between h-16">
           <Link href="/">
-            <a className="text-2xl font-bold text-accent">SoleStyle</a>
+            <a className="text-2xl font-bold text-accent">FootWare</a>
           </Link>
           <div className="flex items-center gap-6">
             <Link href="/shop">

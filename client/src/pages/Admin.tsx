@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
-import { Plus, Edit2, Trash2, X } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -21,6 +21,9 @@ export default function Admin() {
   });
 
   const [showForm, setShowForm] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -43,6 +46,7 @@ export default function Admin() {
         stock: "",
         imageUrl: "",
       });
+      setImagePreview(null);
       setShowForm(false);
       refetchProducts();
     },
@@ -51,13 +55,79 @@ export default function Admin() {
     },
   });
 
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formDataToSend,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await response.json();
+      setFormData({ ...formData, imageUrl: data.url });
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      toast.error("Failed to upload image");
+      console.error(error);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleSubmit = (e: any) => {
+    e.preventDefault();
+    if (!formData.imageUrl) {
+      toast.error("Please upload an image");
+      return;
+    }
+
+    const slug = formData.name.toLowerCase().replace(/\s+/g, "-");
+    createProduct({
+      name: formData.name,
+      slug,
+      description: formData.description,
+      price: formData.price,
+      categoryId: parseInt(formData.categoryId),
+      sizes: formData.sizes.split(",").map((s) => s.trim()),
+      stock: parseInt(formData.stock),
+      imageUrl: formData.imageUrl,
+    });
+  };
+
   if (!isAuthenticated || user?.role !== "admin") {
     return (
       <div className="min-h-screen bg-background">
         <nav className="bg-card border-b border-border">
           <div className="container flex items-center h-16">
             <Link href="/">
-              <a className="text-2xl font-bold text-accent">SoleStyle</a>
+              <a className="text-2xl font-bold text-accent">FootWare</a>
             </Link>
           </div>
         </nav>
@@ -72,27 +142,12 @@ export default function Admin() {
     );
   }
 
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
-    const slug = formData.name.toLowerCase().replace(/\s+/g, "-");
-    createProduct({
-      name: formData.name,
-      slug,
-      description: formData.description,
-      price: formData.price,
-      categoryId: parseInt(formData.categoryId),
-      sizes: formData.sizes.split(",").map((s) => s.trim()),
-      stock: parseInt(formData.stock),
-      imageUrl: formData.imageUrl,
-    });
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <nav className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container flex items-center justify-between h-16">
           <Link href="/">
-            <a className="text-2xl font-bold text-accent">SoleStyle Admin</a>
+            <a className="text-2xl font-bold text-accent">FootWare Admin</a>
           </Link>
           <Link href="/account">
             <a className="text-foreground hover:text-accent transition-colors">Back to Account</a>
@@ -196,18 +251,37 @@ export default function Admin() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Image URL</label>
-                <input
-                  type="url"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
-                />
+                <label className="block text-sm font-semibold text-foreground mb-2">Product Image</label>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingImage}
+                      className="w-full px-4 py-2 border-2 border-dashed border-border rounded-lg text-foreground hover:border-accent transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      <Upload size={20} />
+                      {isUploadingImage ? "Uploading..." : "Click to upload image"}
+                    </button>
+                  </div>
+                  {imagePreview && (
+                    <div className="w-24 h-24 rounded-lg overflow-hidden border border-border">
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
               </div>
 
               <button
                 type="submit"
-                disabled={isPending}
+                disabled={isPending || isUploadingImage}
                 className="w-full px-6 py-3 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
               >
                 {isPending ? "Creating..." : "Create Product"}
@@ -220,12 +294,19 @@ export default function Admin() {
           {products && products.length > 0 ? (
             products.map((product: any) => (
               <Card key={product.id} className="p-6 flex items-center justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground text-lg">{product.name}</h3>
-                  <p className="text-sm text-muted-foreground">{product.description?.substring(0, 100)}...</p>
-                  <div className="flex gap-6 mt-2 text-sm">
-                    <span className="text-accent font-semibold">${product.price}</span>
-                    <span className="text-muted-foreground">Stock: {product.stock}</span>
+                <div className="flex gap-4 flex-1">
+                  {product.imageUrl && (
+                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-foreground text-lg">{product.name}</h3>
+                    <p className="text-sm text-muted-foreground">{product.description?.substring(0, 100)}...</p>
+                    <div className="flex gap-6 mt-2 text-sm">
+                      <span className="text-accent font-semibold">${product.price}</span>
+                      <span className="text-muted-foreground">Stock: {product.stock}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-2">
