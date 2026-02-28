@@ -1,13 +1,42 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
+import { z } from "zod";
+import {
+  getCategories,
+  getProducts,
+  getProductBySlug,
+  getProductById,
+  getFeaturedProducts,
+  getCartItems,
+  addToCart,
+  removeFromCart,
+  updateCartItemQuantity,
+  createOrder,
+  getUserOrders,
+  getOrderById,
+  getOrderItems,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+} from "./db";
+import { TRPCError } from "@trpc/server";
+
+const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user.role !== "admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+  }
+  return next({ ctx });
+});
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -17,12 +46,216 @@ export const appRouter = router({
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  /**
+   * Product and Category Routes
+   */
+  products: router({
+    list: publicProcedure
+      .input(
+        z.object({
+          categoryId: z.number().optional(),
+          minPrice: z.number().optional(),
+          maxPrice: z.number().optional(),
+          sizes: z.array(z.string()).optional(),
+          search: z.string().optional(),
+        })
+      )
+      .query(({ input }) =>
+        getProducts({
+          categoryId: input.categoryId,
+          minPrice: input.minPrice,
+          maxPrice: input.maxPrice,
+          sizes: input.sizes,
+          search: input.search,
+        })
+      ),
+
+    featured: publicProcedure.query(() => getFeaturedProducts()),
+
+    bySlug: publicProcedure
+      .input(z.object({ slug: z.string() }))
+      .query(({ input }) => getProductBySlug(input.slug)),
+
+    byId: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(({ input }) => getProductById(input.id)),
+  }),
+
+  categories: router({
+    list: publicProcedure.query(() => getCategories()),
+  }),
+
+  /**
+   * Shopping Cart Routes
+   */
+  cart: router({
+    list: protectedProcedure.query(({ ctx }) => getCartItems(ctx.user.id)),
+
+    add: protectedProcedure
+      .input(
+        z.object({
+          productId: z.number(),
+          quantity: z.number().min(1),
+          selectedSize: z.string(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        await addToCart(ctx.user.id, input.productId, input.quantity, input.selectedSize);
+        return getCartItems(ctx.user.id);
+      }),
+
+    remove: protectedProcedure
+      .input(z.object({ cartItemId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await removeFromCart(input.cartItemId);
+        return getCartItems(ctx.user.id);
+      }),
+
+    updateQuantity: protectedProcedure
+      .input(z.object({ cartItemId: z.number(), quantity: z.number().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        await updateCartItemQuantity(input.cartItemId, input.quantity);
+        return getCartItems(ctx.user.id);
+      }),
+  }),
+
+  /**
+   * Order Routes
+   */
+  orders: router({
+    list: protectedProcedure.query(({ ctx }) => getUserOrders(ctx.user.id)),
+
+    create: protectedProcedure
+      .input(
+        z.object({
+          orderNumber: z.string(),
+          subtotal: z.string(),
+          shippingCost: z.string(),
+          total: z.string(),
+          shippingAddress: z.object({
+            fullName: z.string(),
+            email: z.string(),
+            phone: z.string(),
+            address: z.string(),
+            city: z.string(),
+            state: z.string(),
+            zipCode: z.string(),
+            country: z.string(),
+          }),
+          items: z.array(
+            z.object({
+              productId: z.number(),
+              productName: z.string(),
+              price: z.string(),
+              quantity: z.number(),
+              selectedSize: z.string(),
+            })
+          ),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const orderId = await createOrder(
+          ctx.user.id,
+          input.orderNumber,
+          input.subtotal,
+          input.shippingCost,
+          input.total,
+          input.shippingAddress,
+          input.items
+        );
+        return { orderId };
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ orderId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const order = await getOrderById(input.orderId);
+        if (!order || order.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        const items = await getOrderItems(input.orderId);
+        return { ...order, items };
+      }),
+  }),
+
+  /**
+   * Admin Routes
+   */
+  admin: router({
+    products: router({
+      create: adminProcedure
+        .input(
+          z.object({
+            name: z.string(),
+            slug: z.string(),
+            description: z.string().optional(),
+            price: z.string(),
+            categoryId: z.number(),
+            imageUrl: z.string().optional(),
+            galleryImages: z.array(z.string()).optional(),
+            sizes: z.array(z.string()),
+            stock: z.number(),
+            featured: z.number().optional(),
+          })
+        )
+        .mutation(({ input }) => createProduct(input)),
+
+      update: adminProcedure
+        .input(
+          z.object({
+            id: z.number(),
+            name: z.string().optional(),
+            slug: z.string().optional(),
+            description: z.string().optional(),
+            price: z.string().optional(),
+            categoryId: z.number().optional(),
+            imageUrl: z.string().optional(),
+            galleryImages: z.array(z.string()).optional(),
+            sizes: z.array(z.string()).optional(),
+            stock: z.number().optional(),
+            featured: z.number().optional(),
+          })
+        )
+        .mutation(({ input }) => {
+          const { id, ...data } = input;
+          return updateProduct(id, data);
+        }),
+
+      delete: adminProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(({ input }) => deleteProduct(input.id)),
+    }),
+
+    categories: router({
+      create: adminProcedure
+        .input(
+          z.object({
+            name: z.string(),
+            slug: z.string(),
+            description: z.string().optional(),
+          })
+        )
+        .mutation(({ input }) => createCategory(input)),
+
+      update: adminProcedure
+        .input(
+          z.object({
+            id: z.number(),
+            name: z.string().optional(),
+            slug: z.string().optional(),
+            description: z.string().optional(),
+          })
+        )
+        .mutation(({ input }) => {
+          const { id, ...data } = input;
+          return updateCategory(id, data);
+        }),
+
+      delete: adminProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(({ input }) => deleteCategory(input.id)),
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
