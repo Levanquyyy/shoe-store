@@ -28,6 +28,9 @@ export default function Home() {
                 <Link href="/account">
                   <a className="text-foreground hover:text-accent transition-colors">Account</a>
                 </Link>
+                <Link href="/wishlist">
+                  <a className="text-foreground hover:text-accent transition-colors">Wishlist</a>
+                </Link>
                 <Link href="/cart">
                   <a className="text-foreground hover:text-accent transition-colors flex items-center gap-2">
                     <ShoppingBag size={20} />
@@ -36,7 +39,7 @@ export default function Home() {
                 </Link>
               </>
             ) : (
-              <Link href="/auth/login">
+              <Link href="/login">
                 <a className="text-foreground hover:text-accent transition-colors">Sign In</a>
               </Link>
             )}

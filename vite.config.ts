@@ -150,7 +150,8 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+// const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+const plugins = [react(), tailwindcss(), vitePluginManusRuntime(),vitePluginManusDebugCollector()];
 
 export default defineConfig({
   plugins,
@@ -170,6 +171,7 @@ export default defineConfig({
   },
   server: {
     host: true,
+    hmr: false,
     allowedHosts: [
       ".manuspre.computer",
       ".manus.computer",

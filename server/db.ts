@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, categories, products, cartItems, orders, orderItems } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -163,7 +163,28 @@ export async function getFeaturedProducts() {
 export async function getCartItems(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(cartItems).where(eq(cartItems.userId, userId));
+
+  const { sql } = await import("drizzle-orm");
+
+  return db
+    .select({
+      id: cartItems.id,
+      userId: cartItems.userId,
+      productId: cartItems.productId,
+      quantity: cartItems.quantity,
+      selectedSize: cartItems.selectedSize,
+      product: {
+        id: products.id,
+        name: products.name,
+        slug: products.slug,
+        price: products.price,
+        imageUrl: products.imageUrl,
+        description: products.description,
+      },
+    })
+    .from(cartItems)
+    .leftJoin(products, eq(cartItems.productId, products.id))
+    .where(eq(cartItems.userId, userId));
 }
 
 export async function addToCart(
@@ -175,6 +196,20 @@ export async function addToCart(
   const db = await getDb();
   if (!db) return null;
 
+  // Check product stock
+  const product = await db
+    .select()
+    .from(products)
+    .where(eq(products.id, productId))
+    .limit(1);
+
+  if (!product.length) {
+    throw new Error("Product not found");
+  }
+
+  const availableStock = product[0].stock;
+
+  // Check existing cart item
   const existing = await db
     .select()
     .from(cartItems)
@@ -187,11 +222,19 @@ export async function addToCart(
 
   if (existing.length > 0) {
     const newQuantity = (existing[0]?.quantity || 0) + quantity;
+    if (newQuantity > availableStock) {
+      throw new Error(`Only ${availableStock} items available. You already have ${existing[0]?.quantity || 0} in cart.`);
+    }
     await db
       .update(cartItems)
       .set({ quantity: newQuantity, updatedAt: new Date() })
       .where(eq(cartItems.id, existing[0].id));
     return existing[0];
+  }
+
+  // Validate stock for new item
+  if (quantity > availableStock) {
+    throw new Error(`Only ${availableStock} items available in stock`);
   }
 
   await db.insert(cartItems).values({
@@ -214,6 +257,37 @@ export async function removeFromCart(cartItemId: number) {
 export async function updateCartItemQuantity(cartItemId: number, quantity: number) {
   const db = await getDb();
   if (!db) return null;
+
+  if (quantity < 1) {
+    throw new Error("Quantity must be at least 1");
+  }
+
+  // Get cart item to find product
+  const cartItem = await db
+    .select()
+    .from(cartItems)
+    .where(eq(cartItems.id, cartItemId))
+    .limit(1);
+
+  if (!cartItem.length) {
+    throw new Error("Cart item not found");
+  }
+
+  // Check product stock
+  const product = await db
+    .select()
+    .from(products)
+    .where(eq(products.id, cartItem[0].productId))
+    .limit(1);
+
+  if (!product.length) {
+    throw new Error("Product not found");
+  }
+
+  if (quantity > product[0].stock) {
+    throw new Error(`Only ${product[0].stock} items available in stock`);
+  }
+
   return db
     .update(cartItems)
     .set({ quantity, updatedAt: new Date() })
@@ -235,6 +309,23 @@ export async function createOrder(
   const db = await getDb();
   if (!db) return null;
 
+  // Validate stock before creating order
+  for (const item of orderItemsData) {
+    const product = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, item.productId))
+      .limit(1);
+
+    if (!product.length) {
+      throw new Error(`Product ${item.productId} not found`);
+    }
+
+    if (item.quantity > product[0].stock) {
+      throw new Error(`Insufficient stock for ${product[0].name}. Only ${product[0].stock} available.`);
+    }
+  }
+
   const result = await db.insert(orders).values({
     userId,
     orderNumber,
@@ -247,12 +338,27 @@ export async function createOrder(
   const orderId = result[0]?.insertId || 0;
 
   if (orderId && orderItemsData.length > 0) {
+    // Insert order items
     await db.insert(orderItems).values(
       orderItemsData.map((item) => ({
         ...item,
         orderId,
       }))
     );
+
+    // Reduce product stock
+    for (const item of orderItemsData) {
+      await db
+        .update(products)
+        .set({
+          stock: sql`stock - ${item.quantity}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(products.id, item.productId));
+    }
+
+    // Clear user's cart after successful order
+    await db.delete(cartItems).where(eq(cartItems.userId, userId));
   }
 
   return orderId;
@@ -275,6 +381,38 @@ export async function getOrderItems(orderId: number) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+}
+
+export async function getAllOrders() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const allOrders = await db.select().from(orders);
+
+  // Fetch items for each order
+  const ordersWithItems = await Promise.all(
+    allOrders.map(async (order) => {
+      const items = await db
+        .select()
+        .from(orderItems)
+        .where(eq(orderItems.orderId, order.id));
+      return {
+        ...order,
+        items,
+      };
+    })
+  );
+
+  return ordersWithItems;
+}
+
+export async function updateOrderStatus(orderId: number, status: string) {
+  const db = await getDb();
+  if (!db) return null;
+  return db
+    .update(orders)
+    .set({ status: status as any, updatedAt: new Date() })
+    .where(eq(orders.id, orderId));
 }
 
 /**
@@ -316,4 +454,14 @@ export async function deleteCategory(id: number) {
   if (!db) return false;
   await db.delete(categories).where(eq(categories.id, id));
   return true;
+}
+
+export async function updateUserRole(openId: string, role: "user" | "admin") {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot update user role: database not available");
+    return;
+  }
+
+  await db.update(users).set({ role }).where(eq(users.openId, openId));
 }

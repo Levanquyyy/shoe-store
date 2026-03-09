@@ -9,13 +9,27 @@ import { useAuth } from "@/_core/hooks/useAuth";
 export default function Cart() {
   const [location, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
-  const { data: cartItems, isLoading } = trpc.cart.list.useQuery();
+  const utils = trpc.useUtils();
+  const { data: cartItems, isLoading, refetch: refetchCart } = trpc.cart.list.useQuery();
+
   const { mutate: removeItem } = trpc.cart.remove.useMutation({
     onSuccess: () => {
       toast.success("Item removed from cart");
+      refetchCart();
+    },
+    onError: () => {
+      toast.error("Failed to remove item");
     },
   });
-  const { mutate: updateQuantity } = trpc.cart.updateQuantity.useMutation();
+
+  const { mutate: updateQuantity } = trpc.cart.updateQuantity.useMutation({
+    onSuccess: () => {
+      refetchCart();
+    },
+    onError: () => {
+      toast.error("Failed to update quantity");
+    },
+  });
 
   if (!isAuthenticated) {
     return (
@@ -56,6 +70,9 @@ export default function Cart() {
           <div className="flex items-center gap-6">
             <Link href="/shop">
               <a className="text-foreground hover:text-accent transition-colors">Shop</a>
+            </Link>
+            <Link href="/wishlist">
+              <a className="text-foreground hover:text-accent transition-colors">Wishlist</a>
             </Link>
             <Link href="/cart">
               <a className="text-accent font-semibold flex items-center gap-2">

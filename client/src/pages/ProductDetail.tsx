@@ -14,7 +14,13 @@ export default function ProductDetail() {
 
   const { data: product, isLoading } = trpc.products.bySlug.useQuery(
     { slug: params?.slug || "" },
-    { enabled: !!params?.slug }
+    {
+      enabled: !!params?.slug,
+      onSuccess: (data) => {
+        const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
+        setIsWishlisted(wishlist.includes(data.id));
+      },
+    }
   );
 
   const { mutate: addToCart, isPending } = trpc.cart.add.useMutation({
@@ -93,6 +99,9 @@ export default function ProductDetail() {
           <div className="flex items-center gap-6">
             <Link href="/shop">
               <a className="text-foreground hover:text-accent transition-colors">Shop</a>
+            </Link>
+            <Link href="/wishlist">
+              <a className="text-foreground hover:text-accent transition-colors">Wishlist</a>
             </Link>
             <Link href="/cart">
               <a className="text-foreground hover:text-accent transition-colors flex items-center gap-2">
@@ -199,22 +208,40 @@ export default function ProductDetail() {
 
             {/* Quantity Selection */}
             <div>
-              <h3 className="font-semibold text-foreground mb-4">Quantity</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-foreground">Quantity</h3>
+                <span className="text-sm text-muted-foreground">
+                  Stock: {product.stock} available
+                </span>
+              </div>
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+                  disabled={quantity <= 1}
+                  className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   −
                 </button>
                 <span className="text-xl font-semibold text-foreground w-8 text-center">{quantity}</span>
                 <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+                  onClick={() => {
+                    if (quantity < product.stock) {
+                      setQuantity(quantity + 1);
+                    } else {
+                      toast.error(`Only ${product.stock} items available`);
+                    }
+                  }}
+                  disabled={quantity >= product.stock}
+                  className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   +
                 </button>
               </div>
+              {quantity > product.stock && (
+                <p className="text-sm text-red-500 mt-2">
+                  Cannot exceed available stock ({product.stock})
+                </p>
+              )}
             </div>
 
             {/* Add to Cart Button */}
@@ -228,7 +255,21 @@ export default function ProductDetail() {
                 {isPending ? "Adding..." : "Add to Cart"}
               </button>
               <button
-                onClick={() => setIsWishlisted(!isWishlisted)}
+                onClick={() => {
+                  if (!product) return;
+                  const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
+                  if (isWishlisted) {
+                    const updated = wishlist.filter((id: number) => id !== product.id);
+                    localStorage.setItem("wishlist", JSON.stringify(updated));
+                    setIsWishlisted(false);
+                    toast.success("Removed from wishlist");
+                  } else {
+                    wishlist.push(product.id);
+                    localStorage.setItem("wishlist", JSON.stringify(wishlist));
+                    setIsWishlisted(true);
+                    toast.success("Added to wishlist");
+                  }
+                }}
                 className="px-6 py-4 border-2 border-border rounded-lg hover:border-accent transition-colors"
               >
                 <Heart size={20} className={isWishlisted ? "fill-current text-accent" : "text-foreground"} />

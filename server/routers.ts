@@ -17,6 +17,8 @@ import {
   getUserOrders,
   getOrderById,
   getOrderItems,
+  getAllOrders,
+  updateOrderStatus,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -254,6 +256,19 @@ export const appRouter = router({
       delete: adminProcedure
         .input(z.object({ id: z.number() }))
         .mutation(({ input }) => deleteCategory(input.id)),
+    }),
+
+    orders: router({
+      list: adminProcedure.query(() => getAllOrders()),
+
+      updateStatus: adminProcedure
+        .input(
+          z.object({
+            orderId: z.number(),
+            status: z.enum(["pending", "processing", "shipped", "delivered", "cancelled"]),
+          })
+        )
+        .mutation(({ input }) => updateOrderStatus(input.orderId, input.status)),
     }),
   }),
 });

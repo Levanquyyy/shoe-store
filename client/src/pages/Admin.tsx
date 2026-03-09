@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Plus, Edit2, Trash2, X, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
+import CategoryManager from "@/components/CategoryManager";
+import OrderManager from "@/components/OrderManager";
 
 export default function Admin() {
   const { user, isAuthenticated } = useAuth();
@@ -32,6 +34,7 @@ export default function Admin() {
     sizes: "",
     stock: "",
     imageUrl: "",
+    featured: 0,
   });
 
   const { mutate: createProduct, isPending } = trpc.admin.products.create.useMutation({
@@ -45,6 +48,7 @@ export default function Admin() {
         sizes: "",
         stock: "",
         imageUrl: "",
+        featured: 0,
       });
       setImagePreview(null);
       setShowForm(false);
@@ -118,6 +122,7 @@ export default function Admin() {
       sizes: formData.sizes.split(",").map((s) => s.trim()),
       stock: parseInt(formData.stock),
       imageUrl: formData.imageUrl,
+      featured: formData.featured,
     });
   };
 
@@ -156,6 +161,9 @@ export default function Admin() {
       </nav>
 
       <div className="container py-12">
+        <OrderManager />
+        <CategoryManager />
+
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold text-foreground">Product Management</h1>
           <button
@@ -248,6 +256,19 @@ export default function Admin() {
                     className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
                   />
                 </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="featured"
+                  checked={formData.featured === 1}
+                  onChange={(e) => setFormData({ ...formData, featured: e.target.checked ? 1 : 0 })}
+                  className="w-4 h-4 rounded border-border cursor-pointer"
+                />
+                <label htmlFor="featured" className="text-sm font-semibold text-foreground cursor-pointer">
+                  Mark as Featured Product
+                </label>
               </div>
 
               <div>

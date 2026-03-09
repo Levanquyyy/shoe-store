@@ -67,6 +67,9 @@ export default function Shop() {
             <Link href="/shop">
               <a className="text-accent font-semibold">Shop</a>
             </Link>
+            <Link href="/wishlist">
+              <a className="text-foreground hover:text-accent transition-colors">Wishlist</a>
+            </Link>
             <Link href="/account">
               <a className="text-foreground hover:text-accent transition-colors">Account</a>
             </Link>
@@ -120,29 +123,44 @@ export default function Shop() {
               {/* Price Range Filter */}
               <div>
                 <h3 className="font-semibold text-foreground mb-4">Price Range</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-muted-foreground">Min: ${priceRange[0]}</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="500"
-                      value={priceRange[0]}
-                      onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                      className="w-full"
-                    />
+                <div className="space-y-3">
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className="text-xs text-muted-foreground block mb-1">Min Price</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="500"
+                        value={priceRange[0]}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          if (val <= priceRange[1]) {
+                            setPriceRange([val, priceRange[1]]);
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs text-muted-foreground block mb-1">Max Price</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="500"
+                        value={priceRange[1]}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 500;
+                          if (val >= priceRange[0]) {
+                            setPriceRange([priceRange[0], val]);
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground">Max: ${priceRange[1]}</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="500"
-                      value={priceRange[1]}
-                      onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                      className="w-full"
-                    />
-                  </div>
+                  <p className="text-sm text-accent font-semibold">
+                    ${priceRange[0]} - ${priceRange[1]}
+                  </p>
                 </div>
               </div>
 
