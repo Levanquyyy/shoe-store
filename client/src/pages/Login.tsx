@@ -29,7 +29,9 @@ export default function Login() {
     onSuccess: async () => {
       toast.success("Đăng nhập thành công");
       await utils.auth.me.invalidate();
-      window.location.href = "/";
+      setTimeout(() => {
+        window.location.reload();
+      }, 600);
     },
     onError: (error) => {
       toast.error(error.message || "Đăng nhập thất bại");
@@ -40,7 +42,9 @@ export default function Login() {
     onSuccess: async () => {
       toast.success("Đăng ký thành công");
       await utils.auth.me.invalidate();
-      window.location.href = "/";
+      setTimeout(() => {
+        window.location.reload();
+      }, 600);
     },
     onError: (error) => {
       toast.error(error.message || "Đăng ký thất bại");
