@@ -21,26 +21,26 @@ export default function Home() {
           </Link>
           <div className="flex items-center gap-6">
             <Link href="/shop">
-              <a className="text-foreground hover:text-accent transition-colors">Shop</a>
+              <a className="text-foreground hover:text-accent transition-colors">Cửa hàng</a>
             </Link>
             {isAuthenticated ? (
               <>
                 <Link href="/account">
-                  <a className="text-foreground hover:text-accent transition-colors">Account</a>
+                  <a className="text-foreground hover:text-accent transition-colors">Tài khoản</a>
                 </Link>
                 <Link href="/wishlist">
-                  <a className="text-foreground hover:text-accent transition-colors">Wishlist</a>
+                  <a className="text-foreground hover:text-accent transition-colors">Yêu thích</a>
                 </Link>
                 <Link href="/cart">
                   <a className="text-foreground hover:text-accent transition-colors flex items-center gap-2">
                     <ShoppingBag size={20} />
-                    Cart
+                    Giỏ hàng
                   </a>
                 </Link>
               </>
             ) : (
               <Link href="/login">
-                <a className="text-foreground hover:text-accent transition-colors">Sign In</a>
+                <a className="text-foreground hover:text-accent transition-colors">Đăng nhập</a>
               </Link>
             )}
           </div>
@@ -53,19 +53,19 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight">
-                Step Into <span className="text-accent">Excellence</span>
+                Bước vào <span className="text-accent">đẳng cấp</span>
               </h1>
               <p className="text-lg text-muted-foreground max-w-xl">
-                Discover our curated collection of premium footwear. From casual comfort to elegant style, find the perfect shoe for every moment.
+                Khám phá bộ sưu tập giày cao cấp được tuyển chọn. Từ phong cách thường ngày đến lịch lãm, luôn có đôi giày phù hợp cho mọi khoảnh khắc.
               </p>
               <div className="flex gap-4 pt-4">
                 <Link href="/shop">
                   <a className="inline-flex items-center justify-center px-8 py-3 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity">
-                    Shop Now
+                    Mua ngay
                   </a>
                 </Link>
                 <button className="inline-flex items-center justify-center px-8 py-3 border-2 border-accent text-accent font-semibold rounded-lg hover:bg-accent/5 transition-colors">
-                  Learn More
+                  Tìm hiểu thêm
                 </button>
               </div>
             </div>
@@ -74,7 +74,7 @@ export default function Home() {
               <div className="relative bg-gradient-to-br from-accent/10 to-orange-500/10 rounded-3xl h-full flex items-center justify-center border border-accent/20">
                 <div className="text-center">
                   <ShoppingBag size={120} className="mx-auto text-accent/40 mb-4" />
-                  <p className="text-muted-foreground">Premium Footwear Collection</p>
+                  <p className="text-muted-foreground">Bộ sưu tập giày cao cấp</p>
                 </div>
               </div>
             </div>
@@ -89,29 +89,29 @@ export default function Home() {
             <div className="flex items-center gap-4">
               <Truck className="text-accent" size={32} />
               <div>
-                <h4 className="font-semibold text-foreground">Free Shipping</h4>
-                <p className="text-sm text-muted-foreground">On orders over $100</p>
+                <h4 className="font-semibold text-foreground">Miễn phí vận chuyển</h4>
+                <p className="text-sm text-muted-foreground">Cho đơn hàng từ $100</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <RotateCcw className="text-accent" size={32} />
               <div>
-                <h4 className="font-semibold text-foreground">Easy Returns</h4>
-                <p className="text-sm text-muted-foreground">30-day return policy</p>
+                <h4 className="font-semibold text-foreground">Đổi trả dễ dàng</h4>
+                <p className="text-sm text-muted-foreground">Chính sách đổi trả 30 ngày</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <Award className="text-accent" size={32} />
               <div>
-                <h4 className="font-semibold text-foreground">Quality Assured</h4>
-                <p className="text-sm text-muted-foreground">Premium materials</p>
+                <h4 className="font-semibold text-foreground">Đảm bảo chất lượng</h4>
+                <p className="text-sm text-muted-foreground">Chất liệu cao cấp</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <ShoppingBag className="text-accent" size={32} />
               <div>
-                <h4 className="font-semibold text-foreground">Secure Checkout</h4>
-                <p className="text-sm text-muted-foreground">Safe transactions</p>
+                <h4 className="font-semibold text-foreground">Thanh toán an toàn</h4>
+                <p className="text-sm text-muted-foreground">Giao dịch bảo mật</p>
               </div>
             </div>
           </div>
@@ -122,7 +122,7 @@ export default function Home() {
       {categories && categories.length > 0 && (
         <section className="py-16 md:py-24">
           <div className="container">
-            <h2 className="text-4xl font-bold text-foreground mb-12 text-center">Shop by Category</h2>
+            <h2 className="text-4xl font-bold text-foreground mb-12 text-center">Mua theo danh mục</h2>
             <div className="grid md:grid-cols-3 gap-6">
               {categories.slice(0, 3).map((category) => (
                 <Link key={category.id} href={`/shop?category=${category.id}`}>
@@ -131,7 +131,7 @@ export default function Home() {
                     <div className="relative text-center">
                       <h3 className="text-2xl font-bold text-foreground mb-2">{category.name}</h3>
                       <p className="text-muted-foreground group-hover:text-accent transition-colors">
-                        Explore Collection →
+                        Khám phá bộ sưu tập →
                       </p>
                     </div>
                   </a>
@@ -146,10 +146,10 @@ export default function Home() {
       <section className="py-16 md:py-24 bg-card border-t border-border">
         <div className="container">
           <div className="flex items-center justify-between mb-12">
-            <h2 className="text-4xl font-bold text-foreground">Featured Shoes</h2>
+            <h2 className="text-4xl font-bold text-foreground">Sản phẩm nổi bật</h2>
             <Link href="/shop">
               <a className="text-accent hover:text-accent/80 transition-colors font-semibold">
-                View All →
+                Xem tất cả →
               </a>
             </Link>
           </div>
@@ -179,7 +179,7 @@ export default function Home() {
                           </div>
                         )}
                         <div className="absolute top-4 right-4 bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm font-semibold">
-                          Featured
+                          Nổi bật
                         </div>
                       </div>
                       <div className="p-4 flex-1 flex flex-col">
@@ -203,7 +203,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">No featured products available yet.</p>
+              <p className="text-muted-foreground">Hiện chưa có sản phẩm nổi bật.</p>
             </div>
           )}
         </div>
@@ -215,34 +215,34 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <h4 className="font-bold mb-4">FootWare</h4>
-              <p className="text-sm opacity-80">Premium footwear for every lifestyle.</p>
+              <p className="text-sm opacity-80">Giày cao cấp cho mọi phong cách sống.</p>
             </div>
             <div>
-              <h4 className="font-bold mb-4">Shop</h4>
+              <h4 className="font-bold mb-4">Mua sắm</h4>
               <ul className="space-y-2 text-sm opacity-80">
-                <li><a href="/shop" className="hover:opacity-100">All Shoes</a></li>
-                <li><a href="/shop" className="hover:opacity-100">New Arrivals</a></li>
-                <li><a href="/shop" className="hover:opacity-100">Sale</a></li>
+                <li><a href="/shop" className="hover:opacity-100">Tất cả sản phẩm</a></li>
+                <li><a href="/shop" className="hover:opacity-100">Hàng mới về</a></li>
+                <li><a href="/shop" className="hover:opacity-100">Khuyến mãi</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-bold mb-4">Support</h4>
+              <h4 className="font-bold mb-4">Hỗ trợ</h4>
               <ul className="space-y-2 text-sm opacity-80">
-                <li><a href="#" className="hover:opacity-100">Contact Us</a></li>
-                <li><a href="#" className="hover:opacity-100">Shipping Info</a></li>
-                <li><a href="#" className="hover:opacity-100">Returns</a></li>
+                <li><a href="#" className="hover:opacity-100">Liên hệ</a></li>
+                <li><a href="#" className="hover:opacity-100">Thông tin vận chuyển</a></li>
+                <li><a href="#" className="hover:opacity-100">Đổi trả</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-bold mb-4">Legal</h4>
+              <h4 className="font-bold mb-4">Pháp lý</h4>
               <ul className="space-y-2 text-sm opacity-80">
-                <li><a href="#" className="hover:opacity-100">Privacy Policy</a></li>
-                <li><a href="#" className="hover:opacity-100">Terms of Service</a></li>
+                <li><a href="#" className="hover:opacity-100">Chính sách bảo mật</a></li>
+                <li><a href="#" className="hover:opacity-100">Điều khoản dịch vụ</a></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-background/20 pt-8 text-center text-sm opacity-80">
-            <p>&copy; 2026 FootWare. All rights reserved.</p>
+            <p>&copy; 2026 FootWare. Bảo lưu mọi quyền.</p>
           </div>
         </div>
       </footer>

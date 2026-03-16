@@ -14,11 +14,11 @@ export default function Admin() {
   const { data: categories } = trpc.categories.list.useQuery();
   const { mutate: deleteProduct } = trpc.admin.products.delete.useMutation({
     onSuccess: () => {
-      toast.success("Product deleted successfully");
+      toast.success("Xóa sản phẩm thành công");
       refetchProducts();
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to delete product");
+      toast.error(error.message || "Không thể xóa sản phẩm");
     },
   });
 
@@ -39,7 +39,7 @@ export default function Admin() {
 
   const { mutate: createProduct, isPending } = trpc.admin.products.create.useMutation({
     onSuccess: () => {
-      toast.success("Product created successfully");
+      toast.success("Tạo sản phẩm thành công");
       setFormData({
         name: "",
         description: "",
@@ -55,7 +55,7 @@ export default function Admin() {
       refetchProducts();
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to create product");
+      toast.error(error.message || "Không thể tạo sản phẩm");
     },
   });
 
@@ -64,12 +64,12 @@ export default function Admin() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+      toast.error("Vui lòng chọn tệp hình ảnh");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size must be less than 5MB");
+      toast.error("Kích thước ảnh phải nhỏ hơn 5MB");
       return;
     }
 
@@ -96,9 +96,9 @@ export default function Admin() {
       };
       reader.readAsDataURL(file);
 
-      toast.success("Image uploaded successfully");
+      toast.success("Tải ảnh lên thành công");
     } catch (error) {
-      toast.error("Failed to upload image");
+      toast.error("Không thể tải ảnh lên");
       console.error(error);
     } finally {
       setIsUploadingImage(false);
@@ -108,7 +108,7 @@ export default function Admin() {
   const handleSubmit = (e: any) => {
     e.preventDefault();
     if (!formData.imageUrl) {
-      toast.error("Please upload an image");
+      toast.error("Vui lòng tải ảnh lên");
       return;
     }
 
@@ -137,10 +137,10 @@ export default function Admin() {
           </div>
         </nav>
         <div className="container py-12 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-4">Admin Access Required</h1>
-          <p className="text-muted-foreground mb-6">You do not have permission to access this page.</p>
+          <h1 className="text-3xl font-bold text-foreground mb-4">Yêu cầu quyền quản trị</h1>
+          <p className="text-muted-foreground mb-6">Bạn không có quyền truy cập trang này.</p>
           <Link href="/">
-            <a className="text-accent hover:opacity-80">Return to home</a>
+            <a className="text-accent hover:opacity-80">Về trang chủ</a>
           </Link>
         </div>
       </div>
@@ -155,7 +155,7 @@ export default function Admin() {
             <a className="text-2xl font-bold text-accent">FootWare Admin</a>
           </Link>
           <Link href="/account">
-            <a className="text-foreground hover:text-accent transition-colors">Back to Account</a>
+            <a className="text-foreground hover:text-accent transition-colors">Quay lại tài khoản</a>
           </Link>
         </div>
       </nav>
@@ -165,20 +165,20 @@ export default function Admin() {
         <CategoryManager />
 
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-4xl font-bold text-foreground">Product Management</h1>
+          <h1 className="text-4xl font-bold text-foreground">Quản lý sản phẩm</h1>
           <button
             onClick={() => setShowForm(!showForm)}
             className="flex items-center gap-2 px-6 py-3 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity"
           >
             <Plus size={20} />
-            Add Product
+            Thêm sản phẩm
           </button>
         </div>
 
         {showForm && (
           <Card className="p-8 mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-foreground">Add New Product</h2>
+              <h2 className="text-2xl font-bold text-foreground">Thêm sản phẩm mới</h2>
               <button onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-foreground">
                 <X size={24} />
               </button>
@@ -186,7 +186,7 @@ export default function Admin() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Product Name</label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Tên sản phẩm</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -196,14 +196,14 @@ export default function Admin() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Category</label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Danh mục</label>
                   <select
                     value={formData.categoryId}
                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                     required
                     className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
                   >
-                    <option value="">Select a category</option>
+                    <option value="">Chọn danh mục</option>
                     {categories?.map((cat: any) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
@@ -214,7 +214,7 @@ export default function Admin() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Description</label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Mô tả</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -225,7 +225,7 @@ export default function Admin() {
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Price</label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Giá</label>
                   <input
                     type="number"
                     step="0.01"
@@ -236,7 +236,7 @@ export default function Admin() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Stock</label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Tồn kho</label>
                   <input
                     type="number"
                     value={formData.stock}
@@ -246,10 +246,10 @@ export default function Admin() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Sizes (comma-separated)</label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Kích cỡ (cách nhau bởi dấu phẩy)</label>
                   <input
                     type="text"
-                    placeholder="6, 7, 8, 9, 10"
+                    placeholder="36, 37, 38, 39, 40"
                     value={formData.sizes}
                     onChange={(e) => setFormData({ ...formData, sizes: e.target.value })}
                     required
@@ -267,12 +267,12 @@ export default function Admin() {
                   className="w-4 h-4 rounded border-border cursor-pointer"
                 />
                 <label htmlFor="featured" className="text-sm font-semibold text-foreground cursor-pointer">
-                  Mark as Featured Product
+                  Đánh dấu sản phẩm nổi bật
                 </label>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Product Image</label>
+                <label className="block text-sm font-semibold text-foreground mb-2">Ảnh sản phẩm</label>
                 <div className="flex gap-4">
                   <div className="flex-1">
                     <input
@@ -289,12 +289,12 @@ export default function Admin() {
                       className="w-full px-4 py-2 border-2 border-dashed border-border rounded-lg text-foreground hover:border-accent transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       <Upload size={20} />
-                      {isUploadingImage ? "Uploading..." : "Click to upload image"}
+                      {isUploadingImage ? "Đang tải lên..." : "Chọn để tải ảnh"}
                     </button>
                   </div>
                   {imagePreview && (
                     <div className="w-24 h-24 rounded-lg overflow-hidden border border-border">
-                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <img src={imagePreview} alt="Xem trước" className="w-full h-full object-cover" />
                     </div>
                   )}
                 </div>
@@ -305,7 +305,7 @@ export default function Admin() {
                 disabled={isPending || isUploadingImage}
                 className="w-full px-6 py-3 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                {isPending ? "Creating..." : "Create Product"}
+                {isPending ? "Đang tạo..." : "Tạo sản phẩm"}
               </button>
             </form>
           </Card>
@@ -326,7 +326,7 @@ export default function Admin() {
                     <p className="text-sm text-muted-foreground">{product.description?.substring(0, 100)}...</p>
                     <div className="flex gap-6 mt-2 text-sm">
                       <span className="text-accent font-semibold">${product.price}</span>
-                      <span className="text-muted-foreground">Stock: {product.stock}</span>
+                      <span className="text-muted-foreground">Tồn kho: {product.stock}</span>
                     </div>
                   </div>
                 </div>
@@ -345,7 +345,7 @@ export default function Admin() {
             ))
           ) : (
             <Card className="p-12 text-center">
-              <p className="text-muted-foreground">No products yet. Create one to get started!</p>
+              <p className="text-muted-foreground">Chưa có sản phẩm nào. Hãy tạo sản phẩm đầu tiên!</p>
             </Card>
           )}
         </div>

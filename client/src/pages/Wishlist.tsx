@@ -29,10 +29,10 @@ export default function Wishlist() {
 
   const { mutate: addToCart, isPending } = trpc.cart.add.useMutation({
     onSuccess: () => {
-      toast.success("Added to cart!");
+      toast.success("Đã thêm vào giỏ hàng");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to add to cart");
+      toast.error(error.message || "Không thể thêm vào giỏ");
     },
   });
 
@@ -40,7 +40,7 @@ export default function Wishlist() {
     const updated = wishlistIds.filter((id) => id !== productId);
     setWishlistIds(updated);
     localStorage.setItem("wishlist", JSON.stringify(updated));
-    toast.success("Removed from wishlist");
+    toast.success("Đã xóa khỏi danh sách yêu thích");
   };
 
   const handleAddToCart = (product: any) => {
@@ -64,9 +64,9 @@ export default function Wishlist() {
           </div>
         </nav>
         <div className="container py-12 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-4">Sign in to view your wishlist</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-4">Đăng nhập để xem danh sách yêu thích</h1>
           <Link href="/">
-            <a className="text-accent hover:opacity-80">Return to home</a>
+            <a className="text-accent hover:opacity-80">Về trang chủ</a>
           </Link>
         </div>
       </div>
@@ -83,12 +83,12 @@ export default function Wishlist() {
           </Link>
           <div className="flex items-center gap-6">
             <Link href="/shop">
-              <a className="text-foreground hover:text-accent transition-colors">Shop</a>
+              <a className="text-foreground hover:text-accent transition-colors">Cửa hàng</a>
             </Link>
             <Link href="/cart">
               <a className="text-foreground hover:text-accent transition-colors flex items-center gap-2">
                 <ShoppingBag size={20} />
-                Cart
+                Giỏ hàng
               </a>
             </Link>
           </div>
@@ -102,20 +102,20 @@ export default function Wishlist() {
             className="flex items-center gap-2 text-accent hover:opacity-80 transition-opacity mb-4"
           >
             <ArrowLeft size={20} />
-            Back to Shop
+            Quay lại cửa hàng
           </button>
-          <h1 className="text-4xl font-bold text-foreground">My Wishlist</h1>
-          <p className="text-muted-foreground mt-2">{wishlistProducts.length} items saved</p>
+          <h1 className="text-4xl font-bold text-foreground">Danh sách yêu thích</h1>
+          <p className="text-muted-foreground mt-2">Đã lưu {wishlistProducts.length} sản phẩm</p>
         </div>
 
         {wishlistProducts.length === 0 ? (
           <div className="text-center py-12">
             <Heart size={64} className="mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">Your wishlist is empty</h2>
-            <p className="text-muted-foreground mb-6">Start adding items to your wishlist</p>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Danh sách yêu thích đang trống</h2>
+            <p className="text-muted-foreground mb-6">Hãy thêm sản phẩm bạn thích ngay nhé</p>
             <Link href="/shop">
               <a className="inline-flex items-center justify-center px-6 py-3 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity">
-                Continue Shopping
+                Tiếp tục mua sắm
               </a>
             </Link>
           </div>
@@ -154,9 +154,9 @@ export default function Wishlist() {
                   {/* Stock Status */}
                   <div>
                     {product.stock > 0 ? (
-                      <p className="text-sm text-green-600 dark:text-green-400">In Stock ({product.stock})</p>
+                      <p className="text-sm text-green-600 dark:text-green-400">Còn hàng ({product.stock})</p>
                     ) : (
-                      <p className="text-sm text-red-600 dark:text-red-400">Out of Stock</p>
+                      <p className="text-sm text-red-600 dark:text-red-400">Hết hàng</p>
                     )}
                   </div>
 
@@ -196,7 +196,7 @@ export default function Wishlist() {
                     className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
                   >
                     <ShoppingBag size={18} className="mr-2" />
-                    Add to Cart
+                    Thêm vào giỏ
                   </Button>
                 </div>
               </Card>

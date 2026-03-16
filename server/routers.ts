@@ -1,5 +1,7 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { hashPassword, verifyPassword } from "./_core/password";
+import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
@@ -25,6 +27,8 @@ import {
   createCategory,
   updateCategory,
   deleteCategory,
+  getUserByEmail,
+  upsertUser,
 } from "./db";
 import { TRPCError } from "@trpc/server";
 
@@ -39,6 +43,82 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
+    register: publicProcedure
+      .input(
+        z.object({
+          name: z.string().min(2, "Tên phải có ít nhất 2 ký tự"),
+          email: z.string().email("Email không hợp lệ"),
+          password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự"),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const email = input.email.trim().toLowerCase();
+        const existingUser = await getUserByEmail(email);
+
+        if (existingUser) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Email đã được sử dụng",
+          });
+        }
+
+        const openId = `local:${email}`;
+        await upsertUser({
+          openId,
+          name: input.name.trim(),
+          email,
+          passwordHash: hashPassword(input.password),
+          loginMethod: "manual",
+          lastSignedIn: new Date(),
+        });
+
+        const sessionToken = await sdk.createSessionToken(openId, {
+          name: input.name.trim(),
+          expiresInMs: ONE_YEAR_MS,
+        });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, {
+          ...cookieOptions,
+          maxAge: ONE_YEAR_MS,
+        });
+
+        return { success: true } as const;
+      }),
+    login: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email("Email không hợp lệ"),
+          password: z.string().min(1, "Vui lòng nhập mật khẩu"),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const email = input.email.trim().toLowerCase();
+        const user = await getUserByEmail(email);
+
+        if (!user || !user.passwordHash || !verifyPassword(input.password, user.passwordHash)) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Email hoặc mật khẩu không đúng",
+          });
+        }
+
+        await upsertUser({
+          openId: user.openId,
+          lastSignedIn: new Date(),
+        });
+
+        const sessionToken = await sdk.createSessionToken(user.openId, {
+          name: user.name ?? "",
+          expiresInMs: ONE_YEAR_MS,
+        });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, {
+          ...cookieOptions,
+          maxAge: ONE_YEAR_MS,
+        });
+
+        return { success: true } as const;
+      }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

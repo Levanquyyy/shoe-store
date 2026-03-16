@@ -5,6 +5,13 @@ import { Package, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 const STATUS_OPTIONS = ["pending", "processing", "shipped", "delivered", "cancelled"];
+const STATUS_LABELS: Record<string, string> = {
+  pending: "chờ xử lý",
+  processing: "đang xử lý",
+  shipped: "đang giao",
+  delivered: "đã giao",
+  cancelled: "đã hủy",
+};
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
   processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
@@ -23,10 +30,10 @@ type OrderItem = {
 type OrderWithItems = {
   id: number;
   orderNumber: string;
-  status: string;
+  status: string | null;
   total: string;
   subtotal: string;
-  shippingCost: string;
+  shippingCost: string | null;
   shippingAddress: any;
   items?: OrderItem[];
 };
@@ -37,11 +44,11 @@ export default function OrderManager() {
 
   const { mutate: updateStatus } = trpc.admin.orders.updateStatus.useMutation({
     onSuccess: () => {
-      toast.success("Order status updated successfully");
+      toast.success("Cập nhật trạng thái đơn hàng thành công");
       refetch();
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to update order status");
+      toast.error(error.message || "Không thể cập nhật trạng thái đơn hàng");
     },
   });
 
@@ -63,11 +70,14 @@ export default function OrderManager() {
       </h3>
       {orders.length === 0 ? (
         <Card className="p-6 text-center text-muted-foreground">
-          No orders in this status
+          Không có đơn hàng ở trạng thái này
         </Card>
       ) : (
         <div className="space-y-3">
           {orders.map((order) => (
+            (() => {
+              const statusKey = order.status ?? "pending";
+              return (
             <Card key={order.id} className="p-6">
               <div
                 onClick={() =>
@@ -80,14 +90,14 @@ export default function OrderManager() {
                     <h4 className="font-semibold text-foreground">#{order.orderNumber}</h4>
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${
-                        STATUS_COLORS[order.status] || "bg-gray-100"
+                        STATUS_COLORS[statusKey] || "bg-gray-100"
                       }`}
                     >
-                      {order.status}
+                      {STATUS_LABELS[statusKey] ?? statusKey}
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Total: ${order.total} | {order.items?.length || 0} items
+                    Tổng: ${order.total} | {order.items?.length || 0} sản phẩm
                   </p>
                 </div>
                 <ChevronDown
@@ -102,18 +112,18 @@ export default function OrderManager() {
                 <div className="mt-4 border-t border-border pt-4 space-y-4">
                   {/* Customer Info */}
                   <div>
-                    <h5 className="font-semibold text-foreground mb-2">Customer Info</h5>
+                    <h5 className="font-semibold text-foreground mb-2">Thông tin khách hàng</h5>
                     <div className="text-sm text-muted-foreground space-y-1">
-                      <p>Name: {order.shippingAddress?.fullName || "N/A"}</p>
+                      <p>Tên: {order.shippingAddress?.fullName || "N/A"}</p>
                       <p>Email: {order.shippingAddress?.email || "N/A"}</p>
-                      <p>Phone: {order.shippingAddress?.phone || "N/A"}</p>
-                      <p>Address: {order.shippingAddress?.address || "N/A"}</p>
+                      <p>Điện thoại: {order.shippingAddress?.phone || "N/A"}</p>
+                      <p>Địa chỉ: {order.shippingAddress?.address || "N/A"}</p>
                     </div>
                   </div>
 
                   {/* Order Items */}
                   <div>
-                    <h5 className="font-semibold text-foreground mb-2">Items ({order.items?.length || 0})</h5>
+                    <h5 className="font-semibold text-foreground mb-2">Sản phẩm ({order.items?.length || 0})</h5>
                     {order.items && order.items.length > 0 ? (
                       <div className="space-y-3">
                         {order.items.map((item, idx) => (
@@ -121,7 +131,7 @@ export default function OrderManager() {
                             <div className="flex-1">
                               <p className="font-semibold text-foreground">{item.productName}</p>
                               <p className="text-xs text-muted-foreground">
-                                Size: {item.selectedSize} | Qty: {item.quantity}
+                                Size: {item.selectedSize} | SL: {item.quantity}
                               </p>
                             </div>
                             <span className="font-semibold text-accent ml-4">
@@ -131,21 +141,21 @@ export default function OrderManager() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground">No items in this order</p>
+                      <p className="text-sm text-muted-foreground">Đơn hàng không có sản phẩm</p>
                     )}
                   </div>
 
                   {/* Status Update */}
                   <div>
-                    <h5 className="font-semibold text-foreground mb-2">Update Status</h5>
+                    <h5 className="font-semibold text-foreground mb-2">Cập nhật trạng thái</h5>
                     <div className="flex gap-2 flex-wrap">
-                      {STATUS_OPTIONS.filter((s) => s !== order.status).map((status) => (
+                      {STATUS_OPTIONS.filter((s) => s !== statusKey).map((status) => (
                         <button
                           key={status}
                           onClick={() => handleUpdateStatus(order.id, status)}
                           className="px-3 py-1 text-sm capitalize bg-muted text-foreground rounded hover:bg-accent hover:text-accent-foreground transition-colors"
                         >
-                          Mark as {status}
+                          Chuyển sang {STATUS_LABELS[status] ?? status}
                         </button>
                       ))}
                     </div>
@@ -153,6 +163,8 @@ export default function OrderManager() {
                 </div>
               )}
             </Card>
+              );
+            })()
           ))}
         </div>
       )}
@@ -163,12 +175,12 @@ export default function OrderManager() {
     <div className="space-y-8 mb-12">
       <div className="flex items-center gap-3">
         <Package size={32} className="text-accent" />
-        <h2 className="text-3xl font-bold text-foreground">Order Management</h2>
+        <h2 className="text-3xl font-bold text-foreground">Quản lý đơn hàng</h2>
       </div>
 
-      {renderOrderList(pendingOrders, "Pending Orders")}
-      {renderOrderList(processingOrders, "Processing Orders")}
-      {renderOrderList(shippedOrders, "Shipped Orders")}
+      {renderOrderList(pendingOrders, "Đơn chờ xử lý")}
+      {renderOrderList(processingOrders, "Đơn đang xử lý")}
+      {renderOrderList(shippedOrders, "Đơn đang giao")}
     </div>
   );
 }

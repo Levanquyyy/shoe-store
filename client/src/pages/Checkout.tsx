@@ -12,11 +12,11 @@ export default function Checkout() {
   const { data: cartItems } = trpc.cart.list.useQuery();
   const { mutate: createOrder, isPending } = trpc.orders.create.useMutation({
     onSuccess: (result) => {
-      toast.success("Order placed successfully!");
+      toast.success("Đặt hàng thành công!");
       setTimeout(() => setLocation(`/order-confirmation?orderId=${result.orderId}`), 1500);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to place order");
+      toast.error(error.message || "Không thể đặt hàng");
     },
   });
 
@@ -42,9 +42,9 @@ export default function Checkout() {
           </div>
         </nav>
         <div className="container py-12 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-4">Sign in to checkout</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-4">Đăng nhập để thanh toán</h1>
           <Link href="/">
-            <a className="text-accent hover:opacity-80">Return to home</a>
+            <a className="text-accent hover:opacity-80">Về trang chủ</a>
           </Link>
         </div>
       </div>
@@ -68,7 +68,7 @@ export default function Checkout() {
     e.preventDefault();
 
     if (!cartItems || cartItems.length === 0) {
-      toast.error("Your cart is empty");
+      toast.error("Giỏ hàng đang trống");
       return;
     }
 
@@ -99,7 +99,7 @@ export default function Checkout() {
           <Link href="/cart">
             <a className="flex items-center gap-2 text-foreground hover:text-accent transition-colors">
               <ShoppingBag size={20} />
-              Cart
+              Giỏ hàng
             </a>
           </Link>
         </div>
@@ -110,10 +110,10 @@ export default function Checkout() {
           <Link href="/cart">
             <a className="flex items-center gap-2 text-accent hover:opacity-80 transition-opacity mb-4">
               <ArrowLeft size={20} />
-              Back to Cart
+              Quay lại giỏ hàng
             </a>
           </Link>
-          <h1 className="text-4xl font-bold text-foreground">Checkout</h1>
+          <h1 className="text-4xl font-bold text-foreground">Thanh toán</h1>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -121,10 +121,10 @@ export default function Checkout() {
             <Card className="p-8">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground mb-6">Shipping Information</h2>
+                  <h2 className="text-2xl font-bold text-foreground mb-6">Thông tin giao hàng</h2>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-foreground mb-2">Full Name</label>
+                      <label className="block text-sm font-semibold text-foreground mb-2">Họ và tên</label>
                       <input
                         type="text"
                         name="fullName"
@@ -146,7 +146,7 @@ export default function Checkout() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-foreground mb-2">Phone</label>
+                      <label className="block text-sm font-semibold text-foreground mb-2">Số điện thoại</label>
                       <input
                         type="tel"
                         name="phone"
@@ -157,7 +157,7 @@ export default function Checkout() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-foreground mb-2">Country</label>
+                      <label className="block text-sm font-semibold text-foreground mb-2">Quốc gia</label>
                       <input
                         type="text"
                         name="country"
@@ -171,7 +171,7 @@ export default function Checkout() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Address</label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Địa chỉ</label>
                   <input
                     type="text"
                     name="address"
@@ -184,7 +184,7 @@ export default function Checkout() {
 
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">City</label>
+                    <label className="block text-sm font-semibold text-foreground mb-2">Thành phố</label>
                     <input
                       type="text"
                       name="city"
@@ -195,7 +195,7 @@ export default function Checkout() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">State</label>
+                    <label className="block text-sm font-semibold text-foreground mb-2">Tỉnh/Thành</label>
                     <input
                       type="text"
                       name="state"
@@ -206,7 +206,7 @@ export default function Checkout() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">Zip Code</label>
+                    <label className="block text-sm font-semibold text-foreground mb-2">Mã bưu điện</label>
                     <input
                       type="text"
                       name="zipCode"
@@ -223,7 +223,7 @@ export default function Checkout() {
                   disabled={isPending}
                   className="w-full px-6 py-3 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  {isPending ? "Processing..." : "Place Order"}
+                  {isPending ? "Đang xử lý..." : "Đặt hàng"}
                 </button>
               </form>
             </Card>
@@ -231,14 +231,14 @@ export default function Checkout() {
 
           <div className="lg:col-span-1">
             <Card className="p-6 sticky top-24 space-y-4">
-              <h2 className="text-xl font-bold text-foreground">Order Summary</h2>
+              <h2 className="text-xl font-bold text-foreground">Tóm tắt đơn hàng</h2>
 
               <div className="space-y-3 max-h-64 overflow-y-auto border-t border-border pt-4">
                 {cartItems?.map((item: any) => (
                   <div key={item.id} className="flex justify-between text-sm">
                     <div>
                       <p className="font-medium text-foreground">{item.product?.name}</p>
-                      <p className="text-xs text-muted-foreground">Size: {item.selectedSize} x {item.quantity}</p>
+                      <p className="text-xs text-muted-foreground">Cỡ: {item.selectedSize} x {item.quantity}</p>
                     </div>
                     <p className="font-semibold text-accent">
                       ${(parseFloat(item.product?.price || 0) * item.quantity).toFixed(2)}
@@ -249,19 +249,19 @@ export default function Checkout() {
 
               <div className="space-y-3 border-t border-border pt-4">
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal</span>
+                  <span>Tạm tính</span>
                   <span>${total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Shipping</span>
+                  <span>Vận chuyển</span>
                   <span className={shippingCost === 0 ? "text-green-600 font-semibold" : ""}>
-                    {shippingCost === 0 ? "FREE" : `$${shippingCost.toFixed(2)}`}
+                    {shippingCost === 0 ? "MIỄN PHÍ" : `$${shippingCost.toFixed(2)}`}
                   </span>
                 </div>
               </div>
 
               <div className="border-t border-border pt-4 flex justify-between text-lg font-bold">
-                <span>Total</span>
+                <span>Tổng cộng</span>
                 <span className="text-accent">${finalTotal.toFixed(2)}</span>
               </div>
             </Card>

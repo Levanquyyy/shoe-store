@@ -16,35 +16,35 @@ export default function CategoryManager() {
 
   const { mutate: createCategory, isPending: isCreating } = trpc.admin.categories.create.useMutation({
     onSuccess: () => {
-      toast.success("Category created successfully");
+      toast.success("Tạo danh mục thành công");
       setFormData({ name: "", slug: "", description: "" });
       setShowForm(false);
       refetchCategories();
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to create category");
+      toast.error(error.message || "Không thể tạo danh mục");
     },
   });
 
   const { mutate: updateCategory, isPending: isUpdating } = trpc.admin.categories.update.useMutation({
     onSuccess: () => {
-      toast.success("Category updated successfully");
+      toast.success("Cập nhật danh mục thành công");
       setFormData({ name: "", slug: "", description: "" });
       setEditingId(null);
       refetchCategories();
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to update category");
+      toast.error(error.message || "Không thể cập nhật danh mục");
     },
   });
 
   const { mutate: deleteCategory } = trpc.admin.categories.delete.useMutation({
     onSuccess: () => {
-      toast.success("Category deleted successfully");
+      toast.success("Xóa danh mục thành công");
       refetchCategories();
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to delete category");
+      toast.error(error.message || "Không thể xóa danh mục");
     },
   });
 
@@ -52,7 +52,7 @@ export default function CategoryManager() {
     e.preventDefault();
 
     if (!formData.name || !formData.slug) {
-      toast.error("Please fill in all required fields");
+      toast.error("Vui lòng điền đầy đủ trường bắt buộc");
       return;
     }
 
@@ -91,14 +91,14 @@ export default function CategoryManager() {
   return (
     <div className="space-y-8 mb-12">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold text-foreground">Category Management</h2>
+        <h2 className="text-3xl font-bold text-foreground">Quản lý danh mục</h2>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 px-6 py-3 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity"
           >
             <Plus size={20} />
-            Add Category
+            Thêm danh mục
           </button>
         )}
       </div>
@@ -107,7 +107,7 @@ export default function CategoryManager() {
         <Card className="p-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-2xl font-bold text-foreground">
-              {editingId ? "Edit Category" : "Add New Category"}
+              {editingId ? "Chỉnh sửa danh mục" : "Thêm danh mục mới"}
             </h3>
             <button onClick={handleCancel} className="text-muted-foreground hover:text-foreground">
               <X size={24} />
@@ -117,12 +117,12 @@ export default function CategoryManager() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Name *</label>
+                <label className="block text-sm font-semibold text-foreground mb-2">Tên *</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Running Shoes"
+                  placeholder="Ví dụ: Giày chạy bộ"
                   className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
                 />
               </div>
@@ -132,19 +132,19 @@ export default function CategoryManager() {
                   type="text"
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  placeholder="e.g., running-shoes"
+                  placeholder="vi-du: giay-chay-bo"
                   className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Description</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Mô tả</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
-                placeholder="Category description (optional)"
+                placeholder="Mô tả danh mục (không bắt buộc)"
                 className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
               />
             </div>
@@ -155,14 +155,14 @@ export default function CategoryManager() {
                 disabled={isCreating || isUpdating}
                 className="px-6 py-2 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
-                {editingId ? "Update" : "Create"}
+                {editingId ? "Cập nhật" : "Tạo mới"}
               </button>
               <button
                 type="button"
                 onClick={handleCancel}
                 className="px-6 py-2 border border-border text-foreground font-semibold rounded-lg hover:bg-muted transition-colors"
               >
-                Cancel
+                Hủy
               </button>
             </div>
           </form>
@@ -200,7 +200,7 @@ export default function CategoryManager() {
 
         {!categories || categories.length === 0 && (
           <Card className="p-8 text-center">
-            <p className="text-muted-foreground">No categories yet. Create one to get started!</p>
+            <p className="text-muted-foreground">Chưa có danh mục nào. Hãy tạo danh mục đầu tiên!</p>
           </Card>
         )}
       </div>

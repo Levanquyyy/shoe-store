@@ -3,7 +3,14 @@ import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { CheckCircle, Printer, Home } from "lucide-react";
-import { toast } from "sonner";
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Chờ xử lý",
+  processing: "Đang xử lý",
+  shipped: "Đang giao",
+  delivered: "Đã giao",
+  cancelled: "Đã hủy",
+};
 
 export default function OrderConfirmation() {
   const [location] = useLocation();
@@ -36,7 +43,7 @@ export default function OrderConfirmation() {
           </div>
         </nav>
         <div className="container py-12 text-center">
-          <p className="text-muted-foreground mb-6">Loading order details...</p>
+          <p className="text-muted-foreground mb-6">Đang tải chi tiết đơn hàng...</p>
         </div>
       </div>
     );
@@ -61,16 +68,16 @@ export default function OrderConfirmation() {
           {/* Success Message */}
           <div className="mb-8 text-center print:hidden">
             <CheckCircle size={64} className="mx-auto text-green-600 mb-4" />
-            <h1 className="text-4xl font-bold text-foreground mb-2">Order Confirmed!</h1>
+            <h1 className="text-4xl font-bold text-foreground mb-2">Đơn hàng đã được ghi nhận!</h1>
             <p className="text-muted-foreground mb-6">
-              Thank you for your purchase. Your order has been received and is pending admin approval.
+              Cảm ơn bạn đã mua hàng. Đơn hàng đã được tiếp nhận và đang chờ quản trị viên duyệt.
             </p>
             <button
               onClick={handlePrint}
               className="inline-flex items-center gap-2 px-6 py-3 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity"
             >
               <Printer size={20} />
-              Print Invoice
+              In hóa đơn
             </button>
           </div>
 
@@ -78,14 +85,14 @@ export default function OrderConfirmation() {
           <Card className="p-8 print:border-0 print:shadow-none">
             {/* Header */}
             <div className="mb-8 pb-8 border-b border-border">
-              <h2 className="text-3xl font-bold text-foreground mb-2">INVOICE</h2>
-              <p className="text-muted-foreground">Order #{order.orderNumber}</p>
+              <h2 className="text-3xl font-bold text-foreground mb-2">HÓA ĐƠN</h2>
+              <p className="text-muted-foreground">Đơn #{order.orderNumber}</p>
             </div>
 
             {/* Order Info */}
             <div className="grid md:grid-cols-2 gap-8 mb-8">
               <div>
-                <h3 className="font-semibold text-foreground mb-4">BILL TO</h3>
+                <h3 className="font-semibold text-foreground mb-4">THÔNG TIN NHẬN HÀNG</h3>
                 <div className="text-sm text-foreground space-y-1">
                   <p className="font-semibold">{order.shippingAddress.fullName}</p>
                   <p>{order.shippingAddress.address}</p>
@@ -99,17 +106,17 @@ export default function OrderConfirmation() {
               </div>
               <div className="text-right">
                 <div className="mb-4">
-                  <p className="text-sm text-muted-foreground">Order Date</p>
+                  <p className="text-sm text-muted-foreground">Ngày đặt</p>
                   <p className="text-lg font-semibold text-foreground">
                     {new Date(order.createdAt).toLocaleDateString()}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Order Status</p>
+                  <p className="text-sm text-muted-foreground">Trạng thái</p>
                   <p className={`text-lg font-semibold ${
                     order.status === "pending" ? "text-yellow-600" : "text-green-600"
                   }`}>
-                    {order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : "Pending"}
+                    {STATUS_LABELS[order.status ?? "pending"] ?? order.status ?? "Chờ xử lý"}
                   </p>
                 </div>
               </div>
@@ -120,11 +127,11 @@ export default function OrderConfirmation() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left py-2 font-semibold text-foreground">Product</th>
-                    <th className="text-center py-2 font-semibold text-foreground">Size</th>
-                    <th className="text-center py-2 font-semibold text-foreground">Qty</th>
-                    <th className="text-right py-2 font-semibold text-foreground">Price</th>
-                    <th className="text-right py-2 font-semibold text-foreground">Total</th>
+                    <th className="text-left py-2 font-semibold text-foreground">Sản phẩm</th>
+                    <th className="text-center py-2 font-semibold text-foreground">Cỡ</th>
+                    <th className="text-center py-2 font-semibold text-foreground">SL</th>
+                    <th className="text-right py-2 font-semibold text-foreground">Đơn giá</th>
+                    <th className="text-right py-2 font-semibold text-foreground">Thành tiền</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -147,17 +154,17 @@ export default function OrderConfirmation() {
             <div className="flex justify-end mb-8">
               <div className="w-full md:w-64">
                 <div className="flex justify-between py-2 border-b border-border mb-2">
-                  <span className="text-foreground">Subtotal</span>
+                  <span className="text-foreground">Tạm tính</span>
                   <span className="text-foreground">${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-border mb-4">
-                  <span className="text-foreground">Shipping</span>
+                  <span className="text-foreground">Vận chuyển</span>
                   <span className={shippingCost === 0 ? "text-green-600 font-semibold" : "text-foreground"}>
-                    {shippingCost === 0 ? "FREE" : `$${shippingCost.toFixed(2)}`}
+                    {shippingCost === 0 ? "MIỄN PHÍ" : `$${shippingCost.toFixed(2)}`}
                   </span>
                 </div>
                 <div className="flex justify-between py-2 text-lg font-bold">
-                  <span className="text-foreground">Total</span>
+                  <span className="text-foreground">Tổng cộng</span>
                   <span className="text-accent">${total.toFixed(2)}</span>
                 </div>
               </div>
@@ -165,8 +172,8 @@ export default function OrderConfirmation() {
 
             {/* Footer */}
             <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-              <p>Thank you for your purchase!</p>
-              <p>Your order is pending admin approval. You will receive a confirmation email once it's approved.</p>
+              <p>Cảm ơn bạn đã mua hàng!</p>
+              <p>Đơn hàng đang chờ duyệt. Bạn sẽ nhận thông báo sau khi đơn được xác nhận.</p>
             </div>
           </Card>
 
@@ -174,13 +181,13 @@ export default function OrderConfirmation() {
           <div className="mt-8 flex gap-4 justify-center print:hidden">
             <Link href="/account">
               <a className="inline-flex items-center gap-2 px-6 py-3 border border-border text-foreground font-semibold rounded-lg hover:bg-muted transition-colors">
-                View Orders
+                Xem đơn hàng
               </a>
             </Link>
             <Link href="/shop">
               <a className="inline-flex items-center gap-2 px-6 py-3 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity">
                 <Home size={20} />
-                Continue Shopping
+                Tiếp tục mua sắm
               </a>
             </Link>
           </div>

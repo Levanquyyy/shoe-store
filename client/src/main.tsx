@@ -5,7 +5,6 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
-import { getLoginUrl } from "./const";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -17,13 +16,7 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
 
   if (!isUnauthorized) return;
-
-  try {
-    window.location.href = getLoginUrl();
-  } catch (e) {
-    console.error("Failed to get login URL:", e);
-    window.location.href = "/login";
-  }
+  window.location.href = "/login";
 };
 
 queryClient.getQueryCache().subscribe(event => {

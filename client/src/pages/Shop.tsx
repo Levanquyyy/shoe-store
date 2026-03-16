@@ -65,18 +65,18 @@ export default function Shop() {
           </Link>
           <div className="flex items-center gap-6">
             <Link href="/shop">
-              <a className="text-accent font-semibold">Shop</a>
+              <a className="text-accent font-semibold">Cửa hàng</a>
             </Link>
             <Link href="/wishlist">
-              <a className="text-foreground hover:text-accent transition-colors">Wishlist</a>
+              <a className="text-foreground hover:text-accent transition-colors">Yêu thích</a>
             </Link>
             <Link href="/account">
-              <a className="text-foreground hover:text-accent transition-colors">Account</a>
+              <a className="text-foreground hover:text-accent transition-colors">Tài khoản</a>
             </Link>
             <Link href="/cart">
               <a className="text-foreground hover:text-accent transition-colors flex items-center gap-2">
                 <ShoppingBag size={20} />
-                Cart
+                Giỏ hàng
               </a>
             </Link>
           </div>
@@ -85,11 +85,11 @@ export default function Shop() {
 
       <div className="container py-12">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-4">Shop Our Collection</h1>
+          <h1 className="text-4xl font-bold text-foreground mb-4">Mua sắm bộ sưu tập</h1>
           <div className="flex gap-4">
             <input
               type="text"
-              placeholder="Search shoes..."
+              placeholder="Tìm kiếm giày..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 px-4 py-2 border border-border rounded-lg bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
@@ -103,11 +103,11 @@ export default function Shop() {
             <div className="space-y-6 sticky top-24">
               {/* Category Filter */}
               <div>
-                <h3 className="font-semibold text-foreground mb-4">Categories</h3>
+                <h3 className="font-semibold text-foreground mb-4">Danh mục</h3>
                 <div className="space-y-2">
                   <Link href="/shop">
                     <a className={`block px-3 py-2 rounded-lg transition-colors ${!categoryId ? "bg-accent text-accent-foreground" : "hover:bg-muted"}`}>
-                      All Categories
+                      Tất cả danh mục
                     </a>
                   </Link>
                     {categories?.map((cat: any) => (
@@ -122,11 +122,11 @@ export default function Shop() {
 
               {/* Price Range Filter */}
               <div>
-                <h3 className="font-semibold text-foreground mb-4">Price Range</h3>
+                <h3 className="font-semibold text-foreground mb-4">Khoảng giá</h3>
                 <div className="space-y-3">
                   <div className="flex gap-3">
                     <div className="flex-1">
-                      <label className="text-xs text-muted-foreground block mb-1">Min Price</label>
+                      <label className="text-xs text-muted-foreground block mb-1">Giá thấp nhất</label>
                       <input
                         type="number"
                         min="0"
@@ -142,7 +142,7 @@ export default function Shop() {
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="text-xs text-muted-foreground block mb-1">Max Price</label>
+                      <label className="text-xs text-muted-foreground block mb-1">Giá cao nhất</label>
                       <input
                         type="number"
                         min="0"
@@ -167,7 +167,7 @@ export default function Shop() {
               {/* Size Filter */}
               {allSizes.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-foreground mb-4">Sizes</h3>
+                  <h3 className="font-semibold text-foreground mb-4">Kích cỡ</h3>
                   <div className="grid grid-cols-3 gap-2">
                       {allSizes.map((size: any) => (
                       <button
@@ -203,7 +203,7 @@ export default function Shop() {
                   className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
                 >
                   <X size={16} />
-                  Clear Filters
+                  Xóa bộ lọc
                 </button>
               )}
             </div>
@@ -214,7 +214,7 @@ export default function Shop() {
             {/* Sort Options */}
             <div className="flex items-center justify-between mb-8">
               <p className="text-muted-foreground">
-                Showing {sortedProducts.length} {sortedProducts.length === 1 ? "product" : "products"}
+                Hiển thị {sortedProducts.length} {sortedProducts.length === 1 ? "sản phẩm" : "sản phẩm"}
               </p>
               <div className="relative">
                 <select
@@ -222,11 +222,11 @@ export default function Shop() {
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
                   className="appearance-none px-4 py-2 pr-10 border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
                 >
-                  <option value="newest">Newest</option>
-                  <option value="name-asc">Name: A-Z</option>
-                  <option value="name-desc">Name: Z-A</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
+                  <option value="newest">Mới nhất</option>
+                  <option value="name-asc">Tên: A-Z</option>
+                  <option value="name-desc">Tên: Z-A</option>
+                  <option value="price-asc">Giá: Thấp đến cao</option>
+                  <option value="price-desc">Giá: Cao đến thấp</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-muted-foreground" size={20} />
               </div>
@@ -258,7 +258,7 @@ export default function Shop() {
                           )}
                           {product.stock === 0 && (
                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                              <span className="text-white font-bold">Out of Stock</span>
+                              <span className="text-white font-bold">Hết hàng</span>
                             </div>
                           )}
                         </div>
@@ -287,7 +287,7 @@ export default function Shop() {
             ) : (
               <div className="text-center py-12">
                 <ShoppingBag size={48} className="mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-lg">No products found. Try adjusting your filters.</p>
+                <p className="text-muted-foreground text-lg">Không tìm thấy sản phẩm. Hãy thử điều chỉnh bộ lọc.</p>
               </div>
             )}
           </div>

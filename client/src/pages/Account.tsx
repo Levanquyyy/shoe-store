@@ -6,12 +6,20 @@ import { ShoppingBag, LogOut, Package, User } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Chờ xử lý",
+  processing: "Đang xử lý",
+  shipped: "Đang giao",
+  delivered: "Đã giao",
+  cancelled: "Đã hủy",
+};
+
 export default function Account() {
   const { user, isAuthenticated, logout } = useAuth();
   const { data: orders } = trpc.orders.list.useQuery();
   const { mutate: logoutMutation } = trpc.auth.logout.useMutation({
     onSuccess: () => {
-      toast.success("Logged out successfully");
+      toast.success("Đăng xuất thành công");
       logout();
     },
   });
@@ -29,9 +37,9 @@ export default function Account() {
           </div>
         </nav>
         <div className="container py-12 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-4">Sign in to view your account</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-4">Đăng nhập để xem tài khoản</h1>
           <Link href="/">
-            <a className="text-accent hover:opacity-80">Return to home</a>
+            <a className="text-accent hover:opacity-80">Về trang chủ</a>
           </Link>
         </div>
       </div>
@@ -47,12 +55,12 @@ export default function Account() {
           </Link>
           <div className="flex items-center gap-6">
             <Link href="/shop">
-              <a className="text-foreground hover:text-accent transition-colors">Shop</a>
+              <a className="text-foreground hover:text-accent transition-colors">Cửa hàng</a>
             </Link>
             <Link href="/cart">
               <a className="text-foreground hover:text-accent transition-colors flex items-center gap-2">
                 <ShoppingBag size={20} />
-                Cart
+                Giỏ hàng
               </a>
             </Link>
           </div>
@@ -68,7 +76,7 @@ export default function Account() {
                   <User size={24} />
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground">{user?.name || "User"}</p>
+                  <p className="font-semibold text-foreground">{user?.name || "Người dùng"}</p>
                   <p className="text-sm text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
@@ -83,7 +91,7 @@ export default function Account() {
                   }`}
                 >
                   <User size={18} className="inline mr-2" />
-                  Profile
+                  Hồ sơ
                 </button>
                 <button
                   onClick={() => setActiveTab("orders")}
@@ -94,7 +102,7 @@ export default function Account() {
                   }`}
                 >
                   <Package size={18} className="inline mr-2" />
-                  Orders
+                  Đơn hàng
                 </button>
               </div>
 
@@ -103,7 +111,7 @@ export default function Account() {
                 className="w-full mt-6 flex items-center justify-center gap-2 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted transition-colors"
               >
                 <LogOut size={18} />
-                Logout
+                Đăng xuất
               </button>
             </Card>
           </div>
@@ -111,29 +119,29 @@ export default function Account() {
           <div className="md:col-span-3">
             {activeTab === "profile" ? (
               <Card className="p-8">
-                <h2 className="text-2xl font-bold text-foreground mb-6">Profile Information</h2>
+                <h2 className="text-2xl font-bold text-foreground mb-6">Thông tin tài khoản</h2>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm text-muted-foreground">Name</label>
-                    <p className="text-lg font-semibold text-foreground">{user?.name || "Not set"}</p>
+                    <label className="text-sm text-muted-foreground">Họ tên</label>
+                    <p className="text-lg font-semibold text-foreground">{user?.name || "Chưa cập nhật"}</p>
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground">Email</label>
-                    <p className="text-lg font-semibold text-foreground">{user?.email || "Not set"}</p>
+                    <p className="text-lg font-semibold text-foreground">{user?.email || "Chưa cập nhật"}</p>
                   </div>
                   <div>
-                    <label className="text-sm text-muted-foreground">Account Type</label>
+                    <label className="text-sm text-muted-foreground">Loại tài khoản</label>
                     <p className="text-lg font-semibold text-foreground capitalize">{user?.role || "user"}</p>
                   </div>
                   {user?.role === "admin" && (
                     <div className="mt-6 p-4 bg-accent/10 border border-accent rounded-lg">
-                      <p className="text-sm text-accent font-semibold">Admin Access</p>
+                      <p className="text-sm text-accent font-semibold">Quyền quản trị</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        You have administrative privileges. Visit the admin panel to manage products.
+                        Bạn có quyền quản trị. Truy cập trang admin để quản lý sản phẩm.
                       </p>
                       <Link href="/admin">
                         <a className="inline-block mt-3 px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:opacity-90 text-sm font-semibold">
-                          Go to Admin Panel
+                          Đi đến trang quản trị
                         </a>
                       </Link>
                     </div>
@@ -142,14 +150,14 @@ export default function Account() {
               </Card>
             ) : (
               <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-foreground mb-6">Order History</h2>
+                <h2 className="text-2xl font-bold text-foreground mb-6">Lịch sử đơn hàng</h2>
                 {!orders || orders.length === 0 ? (
                   <Card className="p-12 text-center">
                     <Package size={48} className="mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground mb-4">No orders yet</p>
+                    <p className="text-muted-foreground mb-4">Chưa có đơn hàng nào</p>
                     <Link href="/shop">
                       <a className="inline-flex items-center justify-center px-6 py-3 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90">
-                        Start Shopping
+                        Mua sắm ngay
                       </a>
                     </Link>
                   </Card>
@@ -158,7 +166,7 @@ export default function Account() {
                     <Card key={order.id} className="p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h3 className="font-semibold text-foreground">Order {order.orderNumber}</h3>
+                          <h3 className="font-semibold text-foreground">Đơn {order.orderNumber}</h3>
                           <p className="text-sm text-muted-foreground">
                             {new Date(order.createdAt).toLocaleDateString()}
                           </p>
@@ -172,12 +180,12 @@ export default function Account() {
                               ? "text-red-600"
                               : "text-blue-600"
                           }`}>
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            {STATUS_LABELS[order.status] ?? order.status}
                           </p>
                         </div>
                       </div>
                       <div className="border-t border-border pt-4">
-                        <p className="text-sm text-muted-foreground mb-2">Shipping to:</p>
+                        <p className="text-sm text-muted-foreground mb-2">Giao đến:</p>
                         <p className="text-sm text-foreground">
                           {order.shippingAddress.fullName}<br />
                           {order.shippingAddress.address}<br />

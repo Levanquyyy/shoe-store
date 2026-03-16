@@ -14,11 +14,11 @@ export default function Cart() {
 
   const { mutate: removeItem } = trpc.cart.remove.useMutation({
     onSuccess: () => {
-      toast.success("Item removed from cart");
+      toast.success("Đã xóa sản phẩm khỏi giỏ");
       refetchCart();
     },
     onError: () => {
-      toast.error("Failed to remove item");
+      toast.error("Không thể xóa sản phẩm");
     },
   });
 
@@ -27,7 +27,7 @@ export default function Cart() {
       refetchCart();
     },
     onError: () => {
-      toast.error("Failed to update quantity");
+      toast.error("Không thể cập nhật số lượng");
     },
   });
 
@@ -42,9 +42,9 @@ export default function Cart() {
           </div>
         </nav>
         <div className="container py-12 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-4">Sign in to view your cart</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-4">Đăng nhập để xem giỏ hàng</h1>
           <Link href="/">
-            <a className="text-accent hover:opacity-80">Return to home</a>
+            <a className="text-accent hover:opacity-80">Về trang chủ</a>
           </Link>
         </div>
       </div>
@@ -69,15 +69,15 @@ export default function Cart() {
           </Link>
           <div className="flex items-center gap-6">
             <Link href="/shop">
-              <a className="text-foreground hover:text-accent transition-colors">Shop</a>
+              <a className="text-foreground hover:text-accent transition-colors">Cửa hàng</a>
             </Link>
             <Link href="/wishlist">
-              <a className="text-foreground hover:text-accent transition-colors">Wishlist</a>
+              <a className="text-foreground hover:text-accent transition-colors">Yêu thích</a>
             </Link>
             <Link href="/cart">
               <a className="text-accent font-semibold flex items-center gap-2">
                 <ShoppingBag size={20} />
-                Cart
+                Giỏ hàng
               </a>
             </Link>
           </div>
@@ -91,24 +91,24 @@ export default function Cart() {
             className="flex items-center gap-2 text-accent hover:opacity-80 transition-opacity mb-4"
           >
             <ArrowLeft size={20} />
-            Continue Shopping
+            Tiếp tục mua sắm
           </button>
-          <h1 className="text-4xl font-bold text-foreground">Shopping Cart</h1>
+          <h1 className="text-4xl font-bold text-foreground">Giỏ hàng</h1>
         </div>
 
         {isLoading ? (
           <div className="text-center py-12">
             <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading cart...</p>
+            <p className="text-muted-foreground">Đang tải giỏ hàng...</p>
           </div>
         ) : !cartItems || cartItems.length === 0 ? (
           <div className="text-center py-12">
             <ShoppingBag size={64} className="mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">Your cart is empty</h2>
-            <p className="text-muted-foreground mb-6">Add some shoes to get started!</p>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Giỏ hàng đang trống</h2>
+            <p className="text-muted-foreground mb-6">Thêm vài sản phẩm để bắt đầu nhé!</p>
             <Link href="/shop">
               <a className="inline-flex items-center justify-center px-6 py-3 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity">
-                Start Shopping
+                Mua sắm ngay
               </a>
             </Link>
           </div>
@@ -135,7 +135,7 @@ export default function Cart() {
                   <div className="flex-1 flex flex-col justify-between">
                     <div>
                       <h3 className="font-semibold text-foreground mb-1">{item.product?.name}</h3>
-                      <p className="text-sm text-muted-foreground">Size: {item.selectedSize}</p>
+                      <p className="text-sm text-muted-foreground">Cỡ: {item.selectedSize}</p>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 border border-border rounded-lg">
@@ -182,40 +182,40 @@ export default function Cart() {
             {/* Order Summary */}
             <div className="lg:col-span-1">
               <Card className="p-6 sticky top-24 space-y-4">
-                <h2 className="text-xl font-bold text-foreground">Order Summary</h2>
+                <h2 className="text-xl font-bold text-foreground">Tóm tắt đơn hàng</h2>
 
                 <div className="space-y-3 border-t border-border pt-4">
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Subtotal</span>
+                    <span>Tạm tính</span>
                     <span>${total.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Shipping</span>
+                    <span>Vận chuyển</span>
                     <span className={shippingCost === 0 ? "text-green-600 font-semibold" : ""}>
-                      {shippingCost === 0 ? "FREE" : `$${shippingCost.toFixed(2)}`}
+                      {shippingCost === 0 ? "MIỄN PHÍ" : `$${shippingCost.toFixed(2)}`}
                     </span>
                   </div>
                   {shippingCost > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      Free shipping on orders over $100
+                      Miễn phí vận chuyển cho đơn trên $100
                     </p>
                   )}
                 </div>
 
                 <div className="border-t border-border pt-4 flex justify-between text-lg font-bold">
-                  <span>Total</span>
+                  <span>Tổng cộng</span>
                   <span className="text-accent">${finalTotal.toFixed(2)}</span>
                 </div>
 
                 <Link href="/checkout">
                   <a className="block w-full text-center px-6 py-3 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity">
-                    Proceed to Checkout
+                    Tiến hành thanh toán
                   </a>
                 </Link>
 
                 <Link href="/shop">
                   <a className="block w-full text-center px-6 py-3 border border-border text-foreground font-semibold rounded-lg hover:bg-muted transition-colors">
-                    Continue Shopping
+                    Tiếp tục mua sắm
                   </a>
                 </Link>
               </Card>

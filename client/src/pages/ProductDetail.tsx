@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRoute, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
@@ -14,29 +14,29 @@ export default function ProductDetail() {
 
   const { data: product, isLoading } = trpc.products.bySlug.useQuery(
     { slug: params?.slug || "" },
-    {
-      enabled: !!params?.slug,
-      onSuccess: (data) => {
-        const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
-        setIsWishlisted(wishlist.includes(data.id));
-      },
-    }
+    { enabled: !!params?.slug }
   );
+
+  useEffect(() => {
+    if (!product) return;
+    const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
+    setIsWishlisted(wishlist.includes(product.id));
+  }, [product]);
 
   const { mutate: addToCart, isPending } = trpc.cart.add.useMutation({
     onSuccess: () => {
-      toast.success("Added to cart!");
+      toast.success("Đã thêm vào giỏ hàng");
       setSelectedSize("");
       setQuantity(1);
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to add to cart");
+      toast.error(error.message || "Không thể thêm vào giỏ");
     },
   });
 
   const handleAddToCart = () => {
     if (!selectedSize) {
-      toast.error("Please select a size");
+      toast.error("Vui lòng chọn kích cỡ");
       return;
     }
     if (!product) return;
@@ -53,7 +53,7 @@ export default function ProductDetail() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading product...</p>
+          <p className="text-muted-foreground">Đang tải sản phẩm...</p>
         </div>
       </div>
     );
@@ -67,15 +67,15 @@ export default function ProductDetail() {
             <Link href="/shop">
               <a className="flex items-center gap-2 text-accent hover:opacity-80 transition-opacity">
                 <ChevronLeft size={20} />
-                Back to Shop
+                Quay lại cửa hàng
               </a>
             </Link>
           </div>
         </nav>
         <div className="container py-12 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-4">Product not found</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-4">Không tìm thấy sản phẩm</h1>
           <Link href="/shop">
-            <a className="text-accent hover:opacity-80">Return to shop</a>
+            <a className="text-accent hover:opacity-80">Về cửa hàng</a>
           </Link>
         </div>
       </div>
@@ -87,6 +87,7 @@ export default function ProductDetail() {
     : product.imageUrl
     ? [product.imageUrl]
     : [];
+  const stock = product.stock ?? 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -98,15 +99,15 @@ export default function ProductDetail() {
           </Link>
           <div className="flex items-center gap-6">
             <Link href="/shop">
-              <a className="text-foreground hover:text-accent transition-colors">Shop</a>
+              <a className="text-foreground hover:text-accent transition-colors">Cửa hàng</a>
             </Link>
             <Link href="/wishlist">
-              <a className="text-foreground hover:text-accent transition-colors">Wishlist</a>
+              <a className="text-foreground hover:text-accent transition-colors">Yêu thích</a>
             </Link>
             <Link href="/cart">
               <a className="text-foreground hover:text-accent transition-colors flex items-center gap-2">
                 <ShoppingBag size={20} />
-                Cart
+                Giỏ hàng
               </a>
             </Link>
           </div>
@@ -117,11 +118,11 @@ export default function ProductDetail() {
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-8 text-sm text-muted-foreground">
           <Link href="/">
-            <a className="hover:text-accent">Home</a>
+            <a className="hover:text-accent">Trang chủ</a>
           </Link>
           <span>/</span>
           <Link href="/shop">
-            <a className="hover:text-accent">Shop</a>
+            <a className="hover:text-accent">Cửa hàng</a>
           </Link>
           <span>/</span>
           <span className="text-foreground">{product.name}</span>
@@ -165,13 +166,13 @@ export default function ProductDetail() {
               <h1 className="text-4xl font-bold text-foreground mb-2">{product.name}</h1>
               <div className="flex items-center gap-4">
                 <span className="text-3xl font-bold text-accent">${product.price}</span>
-                {(product.stock ?? 0) > 0 ? (
+                {stock > 0 ? (
                   <span className="text-sm font-semibold text-green-600 bg-green-100 px-3 py-1 rounded-full">
-                    In Stock ({product.stock} available)
+                    Còn hàng ({stock} sản phẩm)
                   </span>
                 ) : (
                   <span className="text-sm font-semibold text-red-600 bg-red-100 px-3 py-1 rounded-full">
-                    Out of Stock
+                    Hết hàng
                   </span>
                 )}
               </div>
@@ -179,7 +180,7 @@ export default function ProductDetail() {
 
             {product.description && (
               <div>
-                <h3 className="font-semibold text-foreground mb-2">Description</h3>
+                <h3 className="font-semibold text-foreground mb-2">Mô tả</h3>
                 <p className="text-muted-foreground leading-relaxed">{product.description}</p>
               </div>
             )}
@@ -187,7 +188,7 @@ export default function ProductDetail() {
             {/* Size Selection */}
             {product.sizes && product.sizes.length > 0 && (
               <div>
-                <h3 className="font-semibold text-foreground mb-4">Select Size</h3>
+                <h3 className="font-semibold text-foreground mb-4">Chọn kích cỡ</h3>
                 <div className="grid grid-cols-4 gap-3">
                   {product.sizes.map((size) => (
                     <button
@@ -209,9 +210,9 @@ export default function ProductDetail() {
             {/* Quantity Selection */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-foreground">Quantity</h3>
+                <h3 className="font-semibold text-foreground">Số lượng</h3>
                 <span className="text-sm text-muted-foreground">
-                  Stock: {product.stock} available
+                  Tồn kho: {stock}
                 </span>
               </div>
               <div className="flex items-center gap-4">
@@ -225,21 +226,21 @@ export default function ProductDetail() {
                 <span className="text-xl font-semibold text-foreground w-8 text-center">{quantity}</span>
                 <button
                   onClick={() => {
-                    if (quantity < product.stock) {
+                    if (quantity < stock) {
                       setQuantity(quantity + 1);
                     } else {
-                      toast.error(`Only ${product.stock} items available`);
+                      toast.error(`Chỉ còn ${stock} sản phẩm`);
                     }
                   }}
-                  disabled={quantity >= product.stock}
+                  disabled={quantity >= stock}
                   className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   +
                 </button>
               </div>
-              {quantity > product.stock && (
+              {quantity > stock && (
                 <p className="text-sm text-red-500 mt-2">
-                  Cannot exceed available stock ({product.stock})
+                  Không thể vượt quá tồn kho ({stock})
                 </p>
               )}
             </div>
@@ -248,11 +249,11 @@ export default function ProductDetail() {
             <div className="flex gap-4 pt-6">
               <button
                 onClick={handleAddToCart}
-                disabled={!selectedSize || product.stock === 0 || isPending}
+                disabled={!selectedSize || stock === 0 || isPending}
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-accent text-accent-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ShoppingBag size={20} />
-                {isPending ? "Adding..." : "Add to Cart"}
+                {isPending ? "Đang thêm..." : "Thêm vào giỏ"}
               </button>
               <button
                 onClick={() => {
@@ -262,12 +263,12 @@ export default function ProductDetail() {
                     const updated = wishlist.filter((id: number) => id !== product.id);
                     localStorage.setItem("wishlist", JSON.stringify(updated));
                     setIsWishlisted(false);
-                    toast.success("Removed from wishlist");
+                    toast.success("Đã xóa khỏi danh sách yêu thích");
                   } else {
                     wishlist.push(product.id);
                     localStorage.setItem("wishlist", JSON.stringify(wishlist));
                     setIsWishlisted(true);
-                    toast.success("Added to wishlist");
+                    toast.success("Đã thêm vào danh sách yêu thích");
                   }
                 }}
                 className="px-6 py-4 border-2 border-border rounded-lg hover:border-accent transition-colors"
@@ -279,16 +280,16 @@ export default function ProductDetail() {
             {/* Product Details */}
             <Card className="p-6 space-y-4">
               <div>
-                <h4 className="font-semibold text-foreground mb-2">Free Shipping</h4>
-                <p className="text-sm text-muted-foreground">On orders over $100</p>
+                <h4 className="font-semibold text-foreground mb-2">Miễn phí vận chuyển</h4>
+                <p className="text-sm text-muted-foreground">Cho đơn từ $100</p>
               </div>
               <div className="border-t border-border pt-4">
-                <h4 className="font-semibold text-foreground mb-2">Easy Returns</h4>
-                <p className="text-sm text-muted-foreground">30-day return policy</p>
+                <h4 className="font-semibold text-foreground mb-2">Đổi trả dễ dàng</h4>
+                <p className="text-sm text-muted-foreground">Chính sách đổi trả 30 ngày</p>
               </div>
               <div className="border-t border-border pt-4">
-                <h4 className="font-semibold text-foreground mb-2">Secure Checkout</h4>
-                <p className="text-sm text-muted-foreground">100% secure transactions</p>
+                <h4 className="font-semibold text-foreground mb-2">Thanh toán an toàn</h4>
+                <p className="text-sm text-muted-foreground">Giao dịch bảo mật 100%</p>
               </div>
             </Card>
           </div>
