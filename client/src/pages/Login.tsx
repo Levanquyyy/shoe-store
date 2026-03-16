@@ -30,7 +30,7 @@ export default function Login() {
       toast.success("Đăng nhập thành công");
       await utils.auth.me.invalidate();
       setTimeout(() => {
-        window.location.reload();
+        window.location.href = "/?t=" + Date.now();
       }, 600);
     },
     onError: (error) => {
@@ -43,7 +43,7 @@ export default function Login() {
       toast.success("Đăng ký thành công");
       await utils.auth.me.invalidate();
       setTimeout(() => {
-        window.location.reload();
+        window.location.href = "/?t=" + Date.now();
       }, 600);
     },
     onError: (error) => {
