@@ -1,18 +1,24 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import * as mysql from "mysql2/promise";
 import { InsertUser, users, categories, products, cartItems, orders, orderItems } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: mysql.Pool | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      if (!_pool) {
+        _pool = mysql.createPool(process.env.DATABASE_URL);
+      }
+      _db = drizzle(_pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
+      _pool = null;
     }
   }
   return _db;
@@ -85,6 +91,23 @@ export async function getUserByOpenId(openId: string) {
   }
 
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get user by email: database not available");
+    return undefined;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, normalizedEmail))
+    .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
 }
@@ -207,17 +230,17 @@ export async function addToCart(
     throw new Error("Product not found");
   }
 
-  const availableStock = product[0].stock;
+  const availableStock = product[0].stock ?? 0;
 
   // Check existing cart item
   const existing = await db
     .select()
     .from(cartItems)
-    .where(
-      eq(cartItems.userId, userId) &&
-        eq(cartItems.productId, productId) &&
-        eq(cartItems.selectedSize, selectedSize)
-    )
+    .where(and(
+      eq(cartItems.userId, userId),
+      eq(cartItems.productId, productId),
+      eq(cartItems.selectedSize, selectedSize)
+    ))
     .limit(1);
 
   if (existing.length > 0) {
@@ -284,8 +307,9 @@ export async function updateCartItemQuantity(cartItemId: number, quantity: numbe
     throw new Error("Product not found");
   }
 
-  if (quantity > product[0].stock) {
-    throw new Error(`Only ${product[0].stock} items available in stock`);
+  const productStock = product[0].stock ?? 0;
+  if (quantity > productStock) {
+    throw new Error(`Only ${productStock} items available in stock`);
   }
 
   return db
@@ -321,8 +345,9 @@ export async function createOrder(
       throw new Error(`Product ${item.productId} not found`);
     }
 
-    if (item.quantity > product[0].stock) {
-      throw new Error(`Insufficient stock for ${product[0].name}. Only ${product[0].stock} available.`);
+    const productStock = product[0].stock ?? 0;
+    if (item.quantity > productStock) {
+      throw new Error(`Insufficient stock for ${product[0].name}. Only ${productStock} available.`);
     }
   }
 
