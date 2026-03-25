@@ -1,7 +1,17 @@
 import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import * as mysql from "mysql2/promise";
-import { InsertUser, users, categories, products, cartItems, orders, orderItems } from "../drizzle/schema";
+import {
+  InsertUser,
+  users,
+  categories,
+  products,
+  cartItems,
+  orders,
+  orderItems,
+  productConsultations,
+  consultationMessages,
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -147,14 +157,16 @@ export async function getProducts(filters?: {
     if (filters?.maxPrice && parseFloat(p.price) > filters.maxPrice) return false;
     if (filters?.sizes && filters.sizes.length > 0) {
       const productSizes = p.sizes || [];
-      return filters.sizes.some((s) => productSizes.includes(s));
+      if (!filters.sizes.some((s: string) => productSizes.includes(s))) return false;
     }
     if (filters?.search) {
       const searchLower = filters.search.toLowerCase();
-      return (
-        p.name.toLowerCase().includes(searchLower) ||
-        p.description?.toLowerCase().includes(searchLower)
-      );
+      if (
+        !p.name.toLowerCase().includes(searchLower) &&
+        !p.description?.toLowerCase().includes(searchLower)
+      ) {
+        return false;
+      }
     }
     return true;
   });
@@ -434,10 +446,12 @@ export async function getAllOrders() {
 export async function updateOrderStatus(orderId: number, status: string) {
   const db = await getDb();
   if (!db) return null;
-  return db
+  await db
     .update(orders)
     .set({ status: status as any, updatedAt: new Date() })
     .where(eq(orders.id, orderId));
+  const updated = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+  return updated[0] ?? null;
 }
 
 /**
@@ -489,4 +503,101 @@ export async function updateUserRole(openId: string, role: "user" | "admin") {
   }
 
   await db.update(users).set({ role }).where(eq(users.openId, openId));
+}
+
+/**
+ * Product Consultation queries
+ */
+
+export async function createConsultation(productId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.insert(productConsultations).values({ productId, userId });
+  const insertId = result[0]?.insertId;
+  if (!insertId) return null;
+
+  const rows = await db
+    .select()
+    .from(productConsultations)
+    .where(eq(productConsultations.id, insertId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getConsultationById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(productConsultations)
+    .where(eq(productConsultations.id, id))
+    .limit(1);
+  return rows[0];
+}
+
+export async function getConsultationsByProduct(productId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(productConsultations)
+    .where(eq(productConsultations.productId, productId));
+}
+
+export async function getConsultationsByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(productConsultations)
+    .where(eq(productConsultations.userId, userId));
+}
+
+export async function closeConsultation(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  await db
+    .update(productConsultations)
+    .set({ status: "closed", updatedAt: new Date() })
+    .where(eq(productConsultations.id, id));
+  const rows = await db
+    .select()
+    .from(productConsultations)
+    .where(eq(productConsultations.id, id))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function addConsultationMessage(
+  consultationId: number,
+  userId: number,
+  message: string
+) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.insert(consultationMessages).values({
+    consultationId,
+    userId,
+    message,
+  });
+  const insertId = result[0]?.insertId;
+  if (!insertId) return null;
+
+  const rows = await db
+    .select()
+    .from(consultationMessages)
+    .where(eq(consultationMessages.id, insertId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getConsultationMessages(consultationId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(consultationMessages)
+    .where(eq(consultationMessages.consultationId, consultationId));
 }

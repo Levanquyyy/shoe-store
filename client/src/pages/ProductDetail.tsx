@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, ChevronLeft, Heart } from "lucide-react";
 import { toast } from "sonner";
+import { ConsultationButton } from "@/components/ConsultationButton";
 
 export default function ProductDetail() {
   const [match, params] = useRoute("/product/:slug");
@@ -275,6 +276,7 @@ export default function ProductDetail() {
               >
                 <Heart size={20} className={isWishlisted ? "fill-current text-accent" : "text-foreground"} />
               </button>
+              <ConsultationButton productId={product.id} productName={product.name} />
             </div>
 
             {/* Product Details */}

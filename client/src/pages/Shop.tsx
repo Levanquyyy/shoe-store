@@ -4,13 +4,17 @@ import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, ChevronDown, X } from "lucide-react";
+import { parseCategoryIdFromSearch } from "@/lib/url";
 
 type SortOption = "name-asc" | "name-desc" | "price-asc" | "price-desc" | "newest";
 
 export default function Shop() {
-  const [location] = useLocation();
-  const searchParams = new URLSearchParams(location.split("?")[1] || "");
-  const categoryId = searchParams.get("category") ? parseInt(searchParams.get("category")!) : undefined;
+  // useLocation() from wouter returns only the path (e.g. "/shop"), not the
+  // query string. Use window.location.search to reliably read URL parameters.
+  useLocation(); // subscribe to route changes so the component re-renders on navigation
+  const categoryId = parseCategoryIdFromSearch(
+    typeof window !== "undefined" ? window.location.search : ""
+  );
 
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);

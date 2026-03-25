@@ -166,3 +166,59 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
     references: [products.id],
   }),
 }));
+
+/**
+ * Product Consultations
+ * A consultation is a chat thread between a customer and the store about a
+ * specific product. One user can have multiple consultations (one per product
+ * or multiple for the same product over time).
+ */
+export const productConsultations = mysqlTable("productConsultations", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull(),
+  userId: int("userId").notNull(),
+  status: mysqlEnum("status", ["open", "closed"]).default("open").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ProductConsultation = typeof productConsultations.$inferSelect;
+export type InsertProductConsultation = typeof productConsultations.$inferInsert;
+
+/**
+ * Consultation Messages
+ * Each row is a single chat message within a consultation thread.
+ */
+export const consultationMessages = mysqlTable("consultationMessages", {
+  id: int("id").autoincrement().primaryKey(),
+  consultationId: int("consultationId").notNull(),
+  userId: int("userId").notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ConsultationMessage = typeof consultationMessages.$inferSelect;
+export type InsertConsultationMessage = typeof consultationMessages.$inferInsert;
+
+export const productConsultationsRelations = relations(productConsultations, ({ one, many }) => ({
+  product: one(products, {
+    fields: [productConsultations.productId],
+    references: [products.id],
+  }),
+  user: one(users, {
+    fields: [productConsultations.userId],
+    references: [users.id],
+  }),
+  messages: many(consultationMessages),
+}));
+
+export const consultationMessagesRelations = relations(consultationMessages, ({ one }) => ({
+  consultation: one(productConsultations, {
+    fields: [consultationMessages.consultationId],
+    references: [productConsultations.id],
+  }),
+  user: one(users, {
+    fields: [consultationMessages.userId],
+    references: [users.id],
+  }),
+}));

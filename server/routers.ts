@@ -29,8 +29,16 @@ import {
   deleteCategory,
   getUserByEmail,
   upsertUser,
+  createConsultation,
+  getConsultationById,
+  getConsultationsByProduct,
+  getConsultationsByUser,
+  closeConsultation,
+  addConsultationMessage,
+  getConsultationMessages,
 } from "./db";
 import { TRPCError } from "@trpc/server";
+import { canAccessConsultation } from "./consultationHelpers";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -348,8 +356,155 @@ export const appRouter = router({
             status: z.enum(["pending", "processing", "shipped", "delivered", "cancelled"]),
           })
         )
-        .mutation(({ input }) => updateOrderStatus(input.orderId, input.status)),
+        .mutation(async ({ input }) => {
+          const existing = await getOrderById(input.orderId);
+          if (!existing) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: `Order ${input.orderId} not found`,
+            });
+          }
+          if (existing.status !== "pending") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "Order status is immutable: it has already been changed from its initial value and cannot be changed again.",
+            });
+          }
+          const updated = await updateOrderStatus(input.orderId, input.status);
+          if (!updated) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to update order status",
+            });
+          }
+          return updated;
+        }),
     }),
+  }),
+
+  // ── Product Consultation ────────────────────────────────────────────────
+  consultation: router({
+    /**
+     * Create a new consultation thread for a product.
+     * Authenticated users only.
+     */
+    create: protectedProcedure
+      .input(
+        z.object({
+          productId: z.number().int().positive(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const product = await getProductById(input.productId);
+        if (!product) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
+        }
+        const consultation = await createConsultation(input.productId, ctx.user.id);
+        return consultation;
+      }),
+
+    /**
+     * Return all consultations belonging to the currently logged-in user.
+     */
+    getMyConsultations: protectedProcedure.query(async ({ ctx }) => {
+      return getConsultationsByUser(ctx.user.id);
+    }),
+
+    /**
+     * Return messages for a single consultation.
+     * Users may only read their own consultations; admins may read any.
+     */
+    getMessages: protectedProcedure
+      .input(z.object({ consultationId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const consultation = await getConsultationById(input.consultationId);
+        if (!consultation) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Consultation not found" });
+        }
+        if (!canAccessConsultation(consultation, ctx.user)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You do not have permission to view this consultation",
+          });
+        }
+        return getConsultationMessages(input.consultationId);
+      }),
+
+    /**
+     * Append a message to a consultation.
+     * The consultation owner and admins may send messages.
+     * Sending to a closed consultation is not allowed.
+     */
+    sendMessage: protectedProcedure
+      .input(
+        z.object({
+          consultationId: z.number().int().positive(),
+          message: z
+            .string()
+            .min(1, "Message cannot be empty")
+            .max(2000, "Message must be 2000 characters or fewer")
+            .refine((v) => v.trim().length > 0, { message: "Message cannot be only whitespace" }),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const consultation = await getConsultationById(input.consultationId);
+        if (!consultation) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Consultation not found" });
+        }
+        if (!canAccessConsultation(consultation, ctx.user)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You do not have permission to send messages to this consultation",
+          });
+        }
+        if (consultation.status === "closed") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot send a message to a closed consultation",
+          });
+        }
+        return addConsultationMessage(input.consultationId, ctx.user.id, input.message);
+      }),
+
+    /**
+     * Close a consultation.
+     * The consultation owner or an admin may close it.
+     * Closing an already-closed consultation is an error.
+     */
+    close: protectedProcedure
+      .input(z.object({ consultationId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const consultation = await getConsultationById(input.consultationId);
+        if (!consultation) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Consultation not found" });
+        }
+        if (!canAccessConsultation(consultation, ctx.user)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You do not have permission to close this consultation",
+          });
+        }
+        if (consultation.status === "closed") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Consultation is already closed",
+          });
+        }
+        return closeConsultation(input.consultationId);
+      }),
+
+    /**
+     * Admin-only: retrieve all consultations for a given product.
+     */
+    adminGetAll: protectedProcedure
+      .input(z.object({ productId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        return getConsultationsByProduct(input.productId);
+      }),
   }),
 });
 
