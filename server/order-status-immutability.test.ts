@@ -43,6 +43,7 @@ function createAdminContext(): TrpcContext {
     openId: "admin-immutability-test",
     email: "admin-immutability@example.com",
     name: "Admin Immutability Tester",
+    passwordHash: null,
     loginMethod: "manus",
     role: "admin",
     createdAt: new Date(),
@@ -53,7 +54,7 @@ function createAdminContext(): TrpcContext {
   return {
     user,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
-    res: { clearCookie: vi.fn() } as TrpcContext["res"],
+    res: { clearCookie: vi.fn() } as any,
   };
 }
 
@@ -63,6 +64,7 @@ function createUserContext(userId: number = 1): TrpcContext {
     openId: `user-immutability-${userId}`,
     email: `user-immutability-${userId}@example.com`,
     name: `Test User ${userId}`,
+    passwordHash: null,
     loginMethod: "manus",
     role: "user",
     createdAt: new Date(),
@@ -73,7 +75,7 @@ function createUserContext(userId: number = 1): TrpcContext {
   return {
     user,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
-    res: { clearCookie: vi.fn() } as TrpcContext["res"],
+    res: { clearCookie: vi.fn() } as any,
   };
 }
 
@@ -139,9 +141,25 @@ describe("Order Status Immutability", () => {
     );
   });
 
-  it("allows changing status to shipped in the first update", async () => {
+  it("rejects skipping from pending directly to shipped (state machine enforced)", async () => {
     const orderId = 43;
     vi.mocked(db.getOrderById).mockResolvedValue(makePendingOrder(orderId) as any);
+
+    const caller = appRouter.createCaller(createAdminContext());
+    await expect(
+      caller.admin.orders.updateStatus({ orderId, status: "shipped" })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  // -------------------------------------------------------------------------
+  // State machine: sequential transitions are now allowed
+  // -------------------------------------------------------------------------
+
+  it("allows processing -> shipped (valid sequential transition)", async () => {
+    const orderId = 44;
+    vi.mocked(db.getOrderById).mockResolvedValue(
+      makeChangedOrder(orderId, "processing") as any
+    );
     vi.mocked(db.updateOrderStatus).mockResolvedValue(
       makeChangedOrder(orderId, "shipped") as any
     );
@@ -149,41 +167,24 @@ describe("Order Status Immutability", () => {
     const caller = appRouter.createCaller(createAdminContext());
     await expect(
       caller.admin.orders.updateStatus({ orderId, status: "shipped" })
-    ).resolves.toBeDefined();
+    ).resolves.toMatchObject({ status: "shipped" });
+
+    expect(vi.mocked(db.updateOrderStatus)).toHaveBeenCalledWith(orderId, "shipped");
   });
 
-  // -------------------------------------------------------------------------
-  // Immutability violation: second status change must be rejected
-  // -------------------------------------------------------------------------
-
-  it("rejects a second status change after the order was already updated", async () => {
-    const orderId = 44;
-    // Simulate DB already showing status = "processing" (first change happened)
-    vi.mocked(db.getOrderById).mockResolvedValue(
-      makeChangedOrder(orderId, "processing") as any
-    );
-
-    const caller = appRouter.createCaller(createAdminContext());
-
-    await expect(
-      caller.admin.orders.updateStatus({ orderId, status: "shipped" })
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-
-    // updateOrderStatus must NOT be called — the guard should prevent it
-    expect(vi.mocked(db.updateOrderStatus)).not.toHaveBeenCalled();
-  });
-
-  it("rejects a second change regardless of which new status is requested", async () => {
+  it("allows shipped -> delivered (valid sequential transition)", async () => {
     const orderId = 45;
     vi.mocked(db.getOrderById).mockResolvedValue(
       makeChangedOrder(orderId, "shipped") as any
     );
+    vi.mocked(db.updateOrderStatus).mockResolvedValue(
+      makeChangedOrder(orderId, "delivered") as any
+    );
 
     const caller = appRouter.createCaller(createAdminContext());
-
     await expect(
       caller.admin.orders.updateStatus({ orderId, status: "delivered" })
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).resolves.toMatchObject({ status: "delivered" });
   });
 
   it("rejects reverting status back to pending once it was changed", async () => {
@@ -254,10 +255,11 @@ describe("Order Status Immutability", () => {
   // getOrderById call return the already-changed order.
   // -------------------------------------------------------------------------
 
-  it("rejects the second of two sequential status updates simulating a race", async () => {
+  it("rejects a duplicate status transition (race condition: same target twice)", async () => {
     const orderId = 48;
 
-    // First call sees pending, second call (after first update) sees changed
+    // Both concurrent requests read "pending" and try to set "processing".
+    // The second request would attempt "processing -> processing" which is invalid.
     vi.mocked(db.getOrderById)
       .mockResolvedValueOnce(makePendingOrder(orderId) as any)
       .mockResolvedValueOnce(makeChangedOrder(orderId, "processing") as any);
@@ -268,17 +270,18 @@ describe("Order Status Immutability", () => {
 
     const caller = appRouter.createCaller(createAdminContext());
 
-    // First update succeeds
+    // First update pending -> processing succeeds
     await expect(
       caller.admin.orders.updateStatus({ orderId, status: "processing" })
     ).resolves.toBeDefined();
 
-    // Second update (after first has committed) must be rejected
+    // Second update tries pending -> processing again but now sees "processing"
+    // so it would be "processing -> processing" which is invalid (same status)
     await expect(
-      caller.admin.orders.updateStatus({ orderId, status: "shipped" })
+      caller.admin.orders.updateStatus({ orderId, status: "processing" })
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
 
-    // updateOrderStatus is only called once (for the first request)
+    // updateOrderStatus is only called once (for the first valid request)
     expect(vi.mocked(db.updateOrderStatus)).toHaveBeenCalledTimes(1);
   });
 });

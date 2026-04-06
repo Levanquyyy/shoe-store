@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import * as mysql from "mysql2/promise";
 import {
@@ -24,7 +24,7 @@ export async function getDb() {
       if (!_pool) {
         _pool = mysql.createPool(process.env.DATABASE_URL);
       }
-      _db = drizzle(_pool);
+      _db = drizzle(_pool) as any;
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -198,8 +198,6 @@ export async function getFeaturedProducts() {
 export async function getCartItems(userId: number) {
   const db = await getDb();
   if (!db) return [];
-
-  const { sql } = await import("drizzle-orm");
 
   return db
     .select({
@@ -600,4 +598,80 @@ export async function getConsultationMessages(consultationId: number) {
     .select()
     .from(consultationMessages)
     .where(eq(consultationMessages.consultationId, consultationId));
+}
+
+export type ConsultationWithDetails = {
+  id: number;
+  productId: number;
+  userId: number;
+  status: "open" | "closed";
+  createdAt: Date;
+  updatedAt: Date;
+  product: { id: number; name: string; imageUrl: string | null };
+  customer: { id: number; name: string; email: string };
+  lastMessage: { message: string; createdAt: Date } | null;
+};
+
+/**
+ * Returns all consultations with joined product info, customer info, and
+ * the last message preview. Optionally filtered by status.
+ * Results are ordered by updatedAt descending (newest first).
+ */
+export async function getAllConsultationsWithDetails(
+  status?: "open" | "closed"
+): Promise<ConsultationWithDetails[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select({
+      id: productConsultations.id,
+      productId: productConsultations.productId,
+      userId: productConsultations.userId,
+      status: productConsultations.status,
+      createdAt: productConsultations.createdAt,
+      updatedAt: productConsultations.updatedAt,
+      productName: products.name,
+      productImageUrl: products.imageUrl,
+      customerName: users.name,
+      customerEmail: users.email,
+    })
+    .from(productConsultations)
+    .innerJoin(products, eq(productConsultations.productId, products.id))
+    .innerJoin(users, eq(productConsultations.userId, users.id))
+    .where(status ? eq(productConsultations.status, status) : undefined)
+    .orderBy(desc(productConsultations.updatedAt));
+
+  const results: ConsultationWithDetails[] = await Promise.all(
+    rows.map(async (row) => {
+      const lastMessages = await db
+        .select({ message: consultationMessages.message, createdAt: consultationMessages.createdAt })
+        .from(consultationMessages)
+        .where(eq(consultationMessages.consultationId, row.id))
+        .orderBy(desc(consultationMessages.createdAt))
+        .limit(1);
+
+      return {
+        id: row.id,
+        productId: row.productId,
+        userId: row.userId,
+        status: row.status as "open" | "closed",
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        product: {
+          id: row.productId,
+          name: row.productName,
+          imageUrl: row.productImageUrl ?? null,
+        },
+        customer: {
+          id: row.userId,
+          name: row.customerName ?? "",
+          email: row.customerEmail ?? "",
+        },
+        lastMessage: lastMessages.length > 0 ? lastMessages[0] : null,
+      };
+    })
+  );
+
+  return results;
 }

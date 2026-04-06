@@ -5,6 +5,7 @@ import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
+import { isValidTransition, getTransitionErrorMessage, type OrderStatus } from "@shared/orderStateMachine";
 import {
   getCategories,
   getProducts,
@@ -36,6 +37,7 @@ import {
   closeConsultation,
   addConsultationMessage,
   getConsultationMessages,
+  getAllConsultationsWithDetails,
 } from "./db";
 import { TRPCError } from "@trpc/server";
 import { canAccessConsultation } from "./consultationHelpers";
@@ -55,7 +57,7 @@ export const appRouter = router({
       .input(
         z.object({
           name: z.string().min(2, "Tên phải có ít nhất 2 ký tự"),
-          email: z.string().email("Email không hợp lệ"),
+          email: z.string().email(),
           password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự"),
         })
       )
@@ -95,7 +97,7 @@ export const appRouter = router({
     login: publicProcedure
       .input(
         z.object({
-          email: z.string().email("Email không hợp lệ"),
+          email: z.string().email(),
           password: z.string().min(1, "Vui lòng nhập mật khẩu"),
         })
       )
@@ -364,11 +366,12 @@ export const appRouter = router({
               message: `Order ${input.orderId} not found`,
             });
           }
-          if (existing.status !== "pending") {
+          const currentStatus = (existing.status ?? "pending") as OrderStatus;
+          const nextStatus = input.status as OrderStatus;
+          if (!isValidTransition(currentStatus, nextStatus)) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message:
-                "Order status is immutable: it has already been changed from its initial value and cannot be changed again.",
+              message: getTransitionErrorMessage(currentStatus, nextStatus),
             });
           }
           const updated = await updateOrderStatus(input.orderId, input.status);
@@ -504,6 +507,27 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
         }
         return getConsultationsByProduct(input.productId);
+      }),
+
+    /**
+     * Admin-only: retrieve ALL consultations across all products with joined
+     * product info, customer info, and last-message preview. Supports optional
+     * status filter ("open" | "closed"). Omitting or passing "all" returns
+     * all consultations.
+     */
+    adminGetAllConsultations: protectedProcedure
+      .input(
+        z.object({
+          status: z.enum(["open", "closed", "all"]).optional(),
+        })
+      )
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const statusFilter =
+          input.status === "all" || input.status === undefined ? undefined : input.status;
+        return getAllConsultationsWithDetails(statusFilter);
       }),
   }),
 });
