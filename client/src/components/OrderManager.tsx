@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Package, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { OrderSearch } from "./OrderSearch";
+import { Pagination } from "./Pagination";
+import { usePagination } from "@/hooks/usePagination";
 import {
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
@@ -30,8 +32,18 @@ type OrderWithItems = {
   items?: OrderItem[];
 };
 
+const ORDERS_PER_PAGE = 10;
+
 export default function OrderManager() {
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
+  const [paginationState, setPaginationState] = useState<Record<OrderStatus | "cancelled", number>>({
+    pending: 1,
+    processing: 1,
+    shipped: 1,
+    delivered: 1,
+    cancelled: 1,
+  });
+
   const { data: allOrders = [], refetch } = trpc.admin.orders.list.useQuery();
 
   const { mutate: updateStatus } = trpc.admin.orders.updateStatus.useMutation({
@@ -64,7 +76,17 @@ export default function OrderManager() {
 
   const cancelledOrders = allOrders.filter((o: any) => o.status === "cancelled");
 
-  const renderOrderList = (orders: OrderWithItems[], title: string, statusKey: OrderStatus) => (
+  const renderOrderList = (orders: OrderWithItems[], title: string, statusKey: OrderStatus | "cancelled") => {
+    const currentPage = paginationState[statusKey] || 1;
+
+    // Calculate paginated orders
+    const displayedOrders = orders.slice(
+      (currentPage - 1) * ORDERS_PER_PAGE,
+      currentPage * ORDERS_PER_PAGE
+    );
+    const totalPages = Math.ceil(orders.length / ORDERS_PER_PAGE) || 1;
+
+    return (
     <div className="mb-8">
       <h3 className="text-xl font-bold text-foreground mb-4">
         {title} ({orders.length})
@@ -74,8 +96,9 @@ export default function OrderManager() {
           Không có đơn hàng ở trạng thái này
         </Card>
       ) : (
-        <div className="space-y-3">
-          {orders.map((order) => {
+        <>
+          <div className="space-y-3">
+            {displayedOrders.map((order) => {
             const currentStatus = (order.status ?? "pending") as OrderStatus;
             const nextStatus = getNextStatus(currentStatus);
             const canCancel = currentStatus === "pending" || currentStatus === "processing";
@@ -187,10 +210,40 @@ export default function OrderManager() {
               </Card>
             );
           })}
-        </div>
+          </div>
+
+          {/* Pagination */}
+          {orders.length > ORDERS_PER_PAGE && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              hasNextPage={currentPage < totalPages}
+              hasPreviousPage={currentPage > 1}
+              onPageChange={(page) =>
+                setPaginationState((prev) => ({ ...prev, [statusKey]: page }))
+              }
+              onNext={() =>
+                setPaginationState((prev) => ({
+                  ...prev,
+                  [statusKey]: Math.min(currentPage + 1, totalPages),
+                }))
+              }
+              onPrevious={() =>
+                setPaginationState((prev) => ({
+                  ...prev,
+                  [statusKey]: Math.max(currentPage - 1, 1),
+                }))
+              }
+              totalItems={orders.length}
+              pageSize={ORDERS_PER_PAGE}
+              ariaLabel={`Phân trang ${title}`}
+            />
+          )}
+        </>
       )}
     </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-8 mb-12">
@@ -211,26 +264,7 @@ export default function OrderManager() {
       {renderOrderList(groupedOrders["shipped"], "Đơn đang giao", "shipped")}
       {renderOrderList(groupedOrders["delivered"], "Đơn đã giao", "delivered")}
 
-      {cancelledOrders.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-xl font-bold text-foreground mb-4">
-            Đơn đã hủy ({cancelledOrders.length})
-          </h3>
-          <div className="space-y-3">
-            {cancelledOrders.map((order: any) => (
-              <Card key={order.id} className="p-4 opacity-60">
-                <div className="flex items-center gap-3">
-                  <h4 className="font-semibold text-foreground">#{order.orderNumber}</h4>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${ORDER_STATUS_COLORS.cancelled}`}>
-                    {ORDER_STATUS_LABELS.cancelled}
-                  </span>
-                  <p className="text-sm text-muted-foreground">Tổng: ${order.total}</p>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+      {cancelledOrders.length > 0 && renderOrderList(cancelledOrders as OrderWithItems[], "Đơn đã hủy", "cancelled")}
       </div>
     </div>
   );
