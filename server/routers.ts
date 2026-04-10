@@ -22,6 +22,8 @@ import {
   getOrderItems,
   getAllOrders,
   updateOrderStatus,
+  searchOrders,
+  getOrderByNumber,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -350,6 +352,35 @@ export const appRouter = router({
 
     orders: router({
       list: adminProcedure.query(() => getAllOrders()),
+
+      search: adminProcedure
+        .input(
+          z.object({
+            orderNumber: z.string().max(50).optional(),
+            status: z.enum(["pending", "processing", "shipped", "delivered", "cancelled"]).optional(),
+            limit: z.number().int().min(1).max(100).optional(),
+          })
+        )
+        .query(({ input }) =>
+          searchOrders({
+            orderNumber: input.orderNumber,
+            status: input.status,
+            limit: input.limit,
+          })
+        ),
+
+      getByNumber: adminProcedure
+        .input(z.object({ orderNumber: z.string().max(50) }))
+        .query(async ({ input }) => {
+          const order = await getOrderByNumber(input.orderNumber);
+          if (!order) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Order not found",
+            });
+          }
+          return order;
+        }),
 
       updateStatus: adminProcedure
         .input(

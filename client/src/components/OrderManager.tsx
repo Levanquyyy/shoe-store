@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { Package, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { OrderSearch } from "./OrderSearch";
 import {
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
@@ -81,11 +82,13 @@ export default function OrderManager() {
 
             return (
               <Card key={order.id} className="p-6">
-                <div
+                <button
+                  type="button"
                   onClick={() =>
                     setExpandedOrderId(expandedOrderId === order.id ? null : order.id)
                   }
-                  className="cursor-pointer flex items-center justify-between"
+                  aria-expanded={expandedOrderId === order.id}
+                  className="w-full cursor-pointer flex items-center justify-between text-left hover:opacity-80 transition-opacity"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
@@ -107,8 +110,9 @@ export default function OrderManager() {
                     className={`transition-transform ${
                       expandedOrderId === order.id ? "rotate-180" : ""
                     }`}
+                    aria-hidden="true"
                   />
-                </div>
+                </button>
 
                 {expandedOrderId === order.id && (
                   <div className="mt-4 border-t border-border pt-4 space-y-4">
@@ -195,6 +199,13 @@ export default function OrderManager() {
         <h2 className="text-3xl font-bold text-foreground">Quản lý đơn hàng</h2>
       </div>
 
+      {/* Order Search Component */}
+      <OrderSearch />
+
+      {/* Order List by Status */}
+      <div>
+        <h3 className="text-2xl font-bold text-foreground mb-6">Đơn hàng theo trạng thái</h3>
+
       {renderOrderList(groupedOrders["pending"], "Đơn chờ xử lý", "pending")}
       {renderOrderList(groupedOrders["processing"], "Đơn đang xử lý", "processing")}
       {renderOrderList(groupedOrders["shipped"], "Đơn đang giao", "shipped")}
@@ -220,6 +231,7 @@ export default function OrderManager() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

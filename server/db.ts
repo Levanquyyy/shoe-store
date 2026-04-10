@@ -452,6 +452,48 @@ export async function updateOrderStatus(orderId: number, status: string) {
   return updated[0] ?? null;
 }
 
+export async function searchOrders(params: {
+  orderNumber?: string;
+  status?: string;
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const allOrders = await getAllOrders();
+
+  let results = allOrders;
+
+  if (params.orderNumber) {
+    const searchTerm = params.orderNumber.toLowerCase().trim();
+    results = results.filter((order) =>
+      order.orderNumber.toLowerCase().includes(searchTerm)
+    );
+  }
+
+  if (params.status) {
+    results = results.filter((order) => order.status === params.status);
+  }
+
+  if (params.limit && params.limit > 0) {
+    results = results.slice(0, params.limit);
+  }
+
+  return results;
+}
+
+export async function getOrderByNumber(orderNumber: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const allOrders = await getAllOrders();
+  const order = allOrders.find(
+    (o) => o.orderNumber.toLowerCase() === orderNumber.toLowerCase()
+  );
+
+  return order || null;
+}
+
 /**
  * Admin queries
  */
