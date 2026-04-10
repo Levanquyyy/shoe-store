@@ -5,7 +5,6 @@ import { Package, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { OrderSearch } from "./OrderSearch";
 import { Pagination } from "./Pagination";
-import { usePagination } from "@/hooks/usePagination";
 import {
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
@@ -32,7 +31,7 @@ type OrderWithItems = {
   items?: OrderItem[];
 };
 
-const ORDERS_PER_PAGE = 10;
+const ORDERS_PER_PAGE = 5;
 
 export default function OrderManager() {
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
