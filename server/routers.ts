@@ -25,6 +25,7 @@ import {
   searchOrders,
   getOrderByNumber,
   getProductSalesSummary,
+  getProductSalesDashboard,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -305,7 +306,7 @@ export const appRouter = router({
    */
   admin: router({
     products: router({
-      salesSummary: adminProcedure.query(() => getProductSalesSummary()),
+      salesSummary: adminProcedure.query(() => getProductSalesDashboard()),
 
       create: adminProcedure
         .input(

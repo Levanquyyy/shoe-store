@@ -9,6 +9,7 @@ import CategoryManager from "@/components/CategoryManager";
 import OrderManager from "@/components/OrderManager";
 import { AdminConsultationDashboard } from "@/components/AdminConsultationDashboard";
 import { ProductStatsCard } from "@/components/ProductStatsCard";
+import { ProductSalesInsights } from "@/components/ProductSalesInsights";
 import { ProductTable, type Product } from "@/components/ProductTable";
 
 type AdminTab = "orders" | "categories" | "products" | "consultations";
@@ -271,31 +272,7 @@ export default function Admin() {
                     />
                   </div>
 
-                  {salesSummary?.topProducts && salesSummary.topProducts.length > 0 && (
-                    <Card className="p-6 mb-6">
-                      <h2 className="text-xl font-bold text-foreground mb-4">Top sản phẩm bán chạy</h2>
-                      <div className="space-y-3">
-                        {salesSummary.topProducts.slice(0, 5).map((product, index) => (
-                          <div
-                            key={product.productId}
-                            className="flex items-center justify-between rounded-lg border border-border px-4 py-3"
-                          >
-                            <div>
-                              <p className="font-semibold text-foreground">
-                                {index + 1}. {product.productName}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {product.quantity} sản phẩm · $${Number.parseFloat(product.revenue).toLocaleString("en-US", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-                  )}
+                  <ProductSalesInsights items={salesSummary?.insights ?? []} />
                 </>
               );
             })()}

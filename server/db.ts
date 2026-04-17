@@ -507,6 +507,19 @@ export type ProductSalesSummary = {
   topProducts: ProductSalesSummaryItem[];
 };
 
+export type ProductSalesInsightItem = {
+  productId: number;
+  productName: string;
+  price: string;
+  stock: number;
+  quantitySold: number;
+  revenue: string;
+};
+
+export type ProductSalesDashboard = ProductSalesSummary & {
+  insights: ProductSalesInsightItem[];
+};
+
 type SalesOrder = {
   status?: string | null;
   total: string;
@@ -574,6 +587,64 @@ export function summarizeProductSales(orders: SalesOrder[], limit = 5): ProductS
 export async function getProductSalesSummary(limit = 5): Promise<ProductSalesSummary> {
   const allOrders = await getAllOrders();
   return summarizeProductSales(allOrders as SalesOrder[], limit);
+}
+
+type SalesProduct = {
+  id: number;
+  name: string;
+  price: string;
+  stock?: number | null;
+};
+
+export function buildProductSalesDashboard(
+  productsList: SalesProduct[],
+  orders: SalesOrder[]
+): ProductSalesDashboard {
+  const salesByProduct = new Map<number, { quantitySold: number; revenue: number }>();
+
+  for (const order of orders) {
+    if ((order.status ?? "pending") === "cancelled") {
+      continue;
+    }
+
+    for (const item of order.items ?? []) {
+      const current = salesByProduct.get(item.productId) ?? { quantitySold: 0, revenue: 0 };
+      current.quantitySold += item.quantity || 0;
+      current.revenue += (Number.parseFloat(item.price as string) || 0) * (item.quantity || 0);
+      salesByProduct.set(item.productId, current);
+    }
+  }
+
+  const insights = productsList
+    .map((product) => {
+      const sold = salesByProduct.get(product.id) ?? { quantitySold: 0, revenue: 0 };
+      return {
+        productId: product.id,
+        productName: product.name,
+        price: product.price,
+        stock: product.stock ?? 0,
+        quantitySold: sold.quantitySold,
+        revenue: sold.revenue.toFixed(2),
+      } satisfies ProductSalesInsightItem;
+    })
+    .sort((left, right) => {
+      if (right.quantitySold !== left.quantitySold) return right.quantitySold - left.quantitySold;
+      if (right.revenue !== left.revenue) return Number.parseFloat(right.revenue) - Number.parseFloat(left.revenue);
+      return left.productName.localeCompare(right.productName);
+    });
+
+  const summary = summarizeProductSales(orders);
+
+  return {
+    ...summary,
+    insights,
+  };
+}
+
+export async function getProductSalesDashboard(): Promise<ProductSalesDashboard> {
+  const productsList = await getProducts();
+  const allOrders = await getAllOrders();
+  return buildProductSalesDashboard(productsList as SalesProduct[], allOrders as SalesOrder[]);
 }
 
 /**

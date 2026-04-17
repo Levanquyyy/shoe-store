@@ -68,6 +68,7 @@ vi.mock("@/lib/trpc", () => ({
               totalRevenue: "0.00",
               totalUnitsSold: 0,
               topProducts: [],
+              insights: [],
             },
             isLoading: false,
             error: null,
@@ -276,6 +277,16 @@ describe("Admin page – tab navigation", () => {
 
     expect(screen.getByText(/doanh thu/i)).toBeInTheDocument();
     expect(screen.getByText(/bán chạy/i)).toBeInTheDocument();
+  });
+
+  it("renders search and filter controls for product sales insights", async () => {
+    const user = userEvent.setup();
+    render(<Admin />);
+    await user.click(screen.getByRole("tab", { name: /sản phẩm|products/i }));
+
+    expect(screen.getByPlaceholderText(/tìm sản phẩm/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /bán ế/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /chưa bán/i })).toBeInTheDocument();
   });
 
   it("shows AdminConsultationDashboard when Tư vấn tab is clicked", async () => {
