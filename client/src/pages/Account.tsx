@@ -16,7 +16,17 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function Account() {
   const { user, isAuthenticated, logout } = useAuth();
-  const { data: orders } = trpc.orders.list.useQuery();
+  const { data: orders, refetch: refetchOrders } = trpc.orders.list.useQuery();
+  const { mutate: cancelOrder, isPending: isCancellingOrder } = trpc.orders.cancel.useMutation({
+    onSuccess: () => {
+      toast.success("Đã hủy đơn hàng");
+      refetchOrders();
+    },
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Không thể hủy đơn hàng";
+      toast.error(message);
+    },
+  });
   const { mutate: logoutMutation } = trpc.auth.logout.useMutation({
     onSuccess: () => {
       toast.success("Đăng xuất thành công");
@@ -182,6 +192,16 @@ export default function Account() {
                           }`}>
                             {STATUS_LABELS[order.status] ?? order.status}
                           </p>
+                          {(order.status === "pending" || order.status === "processing") && (
+                            <button
+                              type="button"
+                              onClick={() => cancelOrder({ orderId: order.id })}
+                              disabled={isCancellingOrder}
+                              className="mt-3 inline-flex items-center justify-center rounded-lg border border-destructive/30 px-4 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isCancellingOrder ? "Đang hủy..." : "Hủy đơn hàng"}
+                            </button>
+                          )}
                         </div>
                       </div>
                       <div className="border-t border-border pt-4">

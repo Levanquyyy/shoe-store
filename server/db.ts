@@ -494,6 +494,88 @@ export async function getOrderByNumber(orderNumber: string) {
   return order || null;
 }
 
+export type ProductSalesSummaryItem = {
+  productId: number;
+  productName: string;
+  quantity: number;
+  revenue: string;
+};
+
+export type ProductSalesSummary = {
+  totalRevenue: string;
+  totalUnitsSold: number;
+  topProducts: ProductSalesSummaryItem[];
+};
+
+type SalesOrder = {
+  status?: string | null;
+  total: string;
+  items?: Array<{
+    productId: number;
+    productName: string;
+    price: string;
+    quantity: number;
+  }>;
+};
+
+export function summarizeProductSales(orders: SalesOrder[], limit = 5): ProductSalesSummary {
+  const salesByProduct = new Map<
+    number,
+    { productId: number; productName: string; quantity: number; revenue: number }
+  >();
+
+  let totalRevenue = 0;
+  let totalUnitsSold = 0;
+
+  for (const order of orders) {
+    if ((order.status ?? "pending") === "cancelled") {
+      continue;
+    }
+
+    totalRevenue += Number.parseFloat(order.total as string) || 0;
+
+    for (const item of order.items ?? []) {
+      const itemRevenue = (Number.parseFloat(item.price as string) || 0) * (item.quantity || 0);
+      const current = salesByProduct.get(item.productId) ?? {
+        productId: item.productId,
+        productName: item.productName,
+        quantity: 0,
+        revenue: 0,
+      };
+
+      current.quantity += item.quantity || 0;
+      current.revenue += itemRevenue;
+      salesByProduct.set(item.productId, current);
+      totalUnitsSold += item.quantity || 0;
+    }
+  }
+
+  const topProducts = [...salesByProduct.values()]
+    .sort((left, right) => {
+      if (right.quantity !== left.quantity) return right.quantity - left.quantity;
+      if (right.revenue !== left.revenue) return right.revenue - left.revenue;
+      return left.productName.localeCompare(right.productName);
+    })
+    .slice(0, limit)
+    .map((product) => ({
+      productId: product.productId,
+      productName: product.productName,
+      quantity: product.quantity,
+      revenue: product.revenue.toFixed(2),
+    }));
+
+  return {
+    totalRevenue: totalRevenue.toFixed(2),
+    totalUnitsSold,
+    topProducts,
+  };
+}
+
+export async function getProductSalesSummary(limit = 5): Promise<ProductSalesSummary> {
+  const allOrders = await getAllOrders();
+  return summarizeProductSales(allOrders as SalesOrder[], limit);
+}
+
 /**
  * Admin queries
  */

@@ -65,6 +65,27 @@ function createAdminContext(): TrpcContext {
   };
 }
 
+function createUserContext(userId = 1): TrpcContext {
+  const user: AuthenticatedUser = {
+    id: userId,
+    openId: `user-${userId}`,
+    email: `user-${userId}@example.com`,
+    name: `User ${userId}`,
+    passwordHash: null,
+    loginMethod: "local",
+    role: "user",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastSignedIn: new Date(),
+  };
+
+  return {
+    user,
+    req: { protocol: "https", headers: {} } as TrpcContext["req"],
+    res: { clearCookie: vi.fn() } as any,
+  };
+}
+
 function makeOrder(id: number, status: OrderStatus) {
   return {
     id,
@@ -430,5 +451,53 @@ describe("admin.orders.updateStatus – state machine enforcement", () => {
     await expect(
       caller.admin.orders.updateStatus({ orderId: 9999, status: "processing" })
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+});
+
+// ===========================================================================
+// Integration tests: user cancellation route
+// ===========================================================================
+
+describe("orders.cancel – user cancellation flow", () => {
+  it("allows the owner to cancel a pending order", async () => {
+    vi.mocked(db.getOrderById).mockResolvedValue(makeOrder(40, "pending") as any);
+    vi.mocked(db.updateOrderStatus).mockResolvedValue(makeOrder(40, "cancelled") as any);
+
+    const caller = appRouter.createCaller(createUserContext(1));
+    const result = await caller.orders.cancel({ orderId: 40 });
+
+    expect(result).toMatchObject({ status: "cancelled" });
+    expect(vi.mocked(db.updateOrderStatus)).toHaveBeenCalledWith(40, "cancelled");
+  });
+
+  it("allows the owner to cancel a processing order", async () => {
+    vi.mocked(db.getOrderById).mockResolvedValue(makeOrder(41, "processing") as any);
+    vi.mocked(db.updateOrderStatus).mockResolvedValue(makeOrder(41, "cancelled") as any);
+
+    const caller = appRouter.createCaller(createUserContext(1));
+    const result = await caller.orders.cancel({ orderId: 41 });
+
+    expect(result).toMatchObject({ status: "cancelled" });
+  });
+
+  it("rejects cancellation after shipped", async () => {
+    vi.mocked(db.getOrderById).mockResolvedValue(makeOrder(42, "shipped") as any);
+
+    const caller = appRouter.createCaller(createUserContext(1));
+
+    await expect(caller.orders.cancel({ orderId: 42 })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(vi.mocked(db.updateOrderStatus)).not.toHaveBeenCalled();
+  });
+
+  it("rejects cancellation for orders owned by another user", async () => {
+    vi.mocked(db.getOrderById).mockResolvedValue({ ...makeOrder(43, "pending"), userId: 2 } as any);
+
+    const caller = appRouter.createCaller(createUserContext(1));
+
+    await expect(caller.orders.cancel({ orderId: 43 })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
   });
 });

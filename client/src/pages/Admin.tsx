@@ -24,6 +24,7 @@ export default function Admin() {
   const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>("orders");
   const { data: products, refetch: refetchProducts } = trpc.products.list.useQuery({});
+  const { data: salesSummary } = trpc.admin.products.salesSummary.useQuery();
   const { data: categories } = trpc.categories.list.useQuery();
   const { mutate: deleteProduct } = trpc.admin.products.delete.useMutation({
     onSuccess: () => {
@@ -224,31 +225,78 @@ export default function Admin() {
               );
               const lowStockCount = productList.filter((p) => p.stock > 0 && p.stock <= 10).length;
               const outOfStockCount = productList.filter((p) => p.stock === 0).length;
+              const revenueValue = salesSummary?.totalRevenue ?? "0.00";
+              const topProduct = salesSummary?.topProducts?.[0];
 
               return (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-6">
-                  <ProductStatsCard
-                    label="Tổng sản phẩm"
-                    value={totalProducts}
-                    icon={<Package size={18} />}
-                    variant="accent"
-                    subtext={`${outOfStockCount} hết hàng`}
-                  />
-                  <ProductStatsCard
-                    label="Giá trị kho"
-                    value={`$${totalStockValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    icon={<DollarSign size={18} />}
-                    variant="default"
-                    subtext="Tổng giá trị tồn kho"
-                  />
-                  <ProductStatsCard
-                    label="Cảnh báo tồn kho thấp"
-                    value={lowStockCount}
-                    icon={<AlertTriangle size={18} />}
-                    variant={lowStockCount > 0 ? "warning" : "default"}
-                    subtext={lowStockCount > 0 ? "Cần bổ sung hàng" : "Tồn kho ổn định"}
-                  />
-                </div>
+                <>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-6">
+                    <ProductStatsCard
+                      label="Tổng sản phẩm"
+                      value={totalProducts}
+                      icon={<Package size={18} />}
+                      variant="accent"
+                      subtext={`${outOfStockCount} hết hàng`}
+                    />
+                    <ProductStatsCard
+                      label="Doanh thu"
+                      value={`$${Number.parseFloat(revenueValue).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}`}
+                      icon={<DollarSign size={18} />}
+                      variant="default"
+                      subtext={`${salesSummary?.totalUnitsSold ?? 0} sản phẩm đã bán`}
+                    />
+                    <ProductStatsCard
+                      label="Bán chạy nhất"
+                      value={topProduct?.productName ?? "Chưa có dữ liệu"}
+                      icon={<Package size={18} />}
+                      variant="accent"
+                      subtext={
+                        topProduct
+                          ? `${topProduct.quantity} đã bán · $${Number.parseFloat(topProduct.revenue).toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}`
+                          : "Chưa có đơn hoàn tất"
+                      }
+                    />
+                    <ProductStatsCard
+                      label="Cảnh báo tồn kho thấp"
+                      value={lowStockCount}
+                      icon={<AlertTriangle size={18} />}
+                      variant={lowStockCount > 0 ? "warning" : "default"}
+                      subtext={lowStockCount > 0 ? "Cần bổ sung hàng" : "Tồn kho ổn định"}
+                    />
+                  </div>
+
+                  {salesSummary?.topProducts && salesSummary.topProducts.length > 0 && (
+                    <Card className="p-6 mb-6">
+                      <h2 className="text-xl font-bold text-foreground mb-4">Top sản phẩm bán chạy</h2>
+                      <div className="space-y-3">
+                        {salesSummary.topProducts.slice(0, 5).map((product, index) => (
+                          <div
+                            key={product.productId}
+                            className="flex items-center justify-between rounded-lg border border-border px-4 py-3"
+                          >
+                            <div>
+                              <p className="font-semibold text-foreground">
+                                {index + 1}. {product.productName}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {product.quantity} sản phẩm · $${Number.parseFloat(product.revenue).toLocaleString("en-US", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  )}
+                </>
               );
             })()}
 

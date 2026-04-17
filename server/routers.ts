@@ -24,6 +24,7 @@ import {
   updateOrderStatus,
   searchOrders,
   getOrderByNumber,
+  getProductSalesSummary,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -219,6 +220,33 @@ export const appRouter = router({
   orders: router({
     list: protectedProcedure.query(({ ctx }) => getUserOrders(ctx.user.id)),
 
+    cancel: protectedProcedure
+      .input(z.object({ orderId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const order = await getOrderById(input.orderId);
+        if (!order || order.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+
+        const currentStatus = (order.status ?? "pending") as OrderStatus;
+        if (!isValidTransition(currentStatus, "cancelled")) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: getTransitionErrorMessage(currentStatus, "cancelled"),
+          });
+        }
+
+        const updated = await updateOrderStatus(input.orderId, "cancelled");
+        if (!updated) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to cancel order",
+          });
+        }
+
+        return updated;
+      }),
+
     create: protectedProcedure
       .input(
         z.object({
@@ -277,6 +305,8 @@ export const appRouter = router({
    */
   admin: router({
     products: router({
+      salesSummary: adminProcedure.query(() => getProductSalesSummary()),
+
       create: adminProcedure
         .input(
           z.object({

@@ -62,6 +62,17 @@ vi.mock("@/lib/trpc", () => ({
         create: {
           useMutation: () => ({ mutate: vi.fn(), isPending: false }),
         },
+        salesSummary: {
+          useQuery: () => ({
+            data: {
+              totalRevenue: "0.00",
+              totalUnitsSold: 0,
+              topProducts: [],
+            },
+            isLoading: false,
+            error: null,
+          }),
+        },
         categories: {
           create: {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
@@ -256,6 +267,15 @@ describe("Admin page – tab navigation", () => {
     await user.click(screen.getByRole("tab", { name: /sản phẩm|products/i }));
     // Products section has specific heading
     expect(screen.getByText(/quản lý sản phẩm|manage products|products/i)).toBeInTheDocument();
+  });
+
+  it("shows revenue and best-selling product stats in the products tab", async () => {
+    const user = userEvent.setup();
+    render(<Admin />);
+    await user.click(screen.getByRole("tab", { name: /sản phẩm|products/i }));
+
+    expect(screen.getByText(/doanh thu/i)).toBeInTheDocument();
+    expect(screen.getByText(/bán chạy/i)).toBeInTheDocument();
   });
 
   it("shows AdminConsultationDashboard when Tư vấn tab is clicked", async () => {
